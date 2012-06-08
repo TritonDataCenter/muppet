@@ -1,0 +1,13 @@
+{
+        "name": "1.moray.sds.us-east-1.joyent.com",
+        "srvce": "_http",
+        "proto": "_tcp",
+        "port": 80,
+        "zookeeper": {
+                "servers": [ {
+                        "host": "10.99.99.238",
+                        "port": 2181
+                } ],
+                "timeout": 1000
+        }
+}

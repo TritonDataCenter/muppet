@@ -1,0 +1,27 @@
+global
+	log 127.0.0.1   local0
+        log 127.0.0.1   local1 notice
+	ulimit-n 65535
+	user nobody
+	group nobody
+        daemon
+        pidfile /var/run/haproxy.pid
+
+defaults
+        log     global
+        mode    http
+        option  dontlognull
+        option  dontlog-normal
+        option forwardfor
+        no option http-server-close
+	option redispatch
+        retries 3
+        maxconn 32768
+        timeout connect 500
+        timeout client  30000
+        timeout server  30000
+
+listen HTTP *:80
+        balance roundrobin
+        stats enable
+        stats auth admin:admin
