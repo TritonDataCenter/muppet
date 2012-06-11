@@ -26,8 +26,8 @@
 		     exec="node main.js -f ./etc/config.json &amp;"
 		     timeout_seconds="10">
 	    <method_context working_directory="/opt/smartdc/muppet">
-                <method_credential user="nobody"
-                                   group="nobody"
+                <method_credential user="root"
+                                   group="root"
                                    privileges="basic,net_privaddr"/>
                 <method_environment>
                     <envvar name="PATH"
