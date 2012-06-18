@@ -42,6 +42,7 @@ SMF_MANIFESTS_IN = smf/manifests/$(MY_NAME).xml.in
 # Variables
 #
 
+NODE_PREBUILT_TAG	= zone
 NODE_PREBUILT_VERSION	:= v0.6.19
 
 include ./tools/mk/Makefile.defs
