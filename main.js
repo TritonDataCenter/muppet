@@ -1,10 +1,10 @@
 // Copyright (c) 2012, Joyent, Inc. All rights reserved.
 
-var assert = require('assert');
 var fs = require('fs');
 
+var assert = require('assert-plus');
 var bunyan = require('bunyan');
-var optimist = require('optimist');
+var getopt = require('posix-getopt');
 var zkplus = require('zkplus');
 
 var core = require('./lib');
@@ -13,28 +13,15 @@ var core = require('./lib');
 
 ///--- Globals
 
-var ARGV = optimist.options({
-        'd': {
-                alias: 'debug',
-                describe: 'debug level'
-        },
-        'f': {
-                alias: 'file',
-                describe: 'configuration file',
-                demand: true
-        }
-}).argv;
-
+var ARGV;
 var CFG;
-
 var LOG = bunyan.createLogger({
-        level: ARGV.d ? (ARGV.d > 1 ? 'trace' : 'debug') : 'info',
+        level: (process.env.LOG_LEVEL || 'info'),
         name: 'muppet',
+        stream: process.stderr,
         serializers: {
                 err: bunyan.stdSerializers.err
-        },
-        src: ARGV.d ? true : false,
-        stream: process.stdout
+        }
 });
 
 
@@ -46,9 +33,41 @@ function errorAndExit(err, msg) {
         process.exit(1);
 }
 
-function readConfig() {
+
+function parseOptions() {
+        var option;
+        var opts = {};
+        var parser = new getopt.BasicParser('vf:(file)', process.argv);
+
+        while ((option = parser.getopt()) !== undefined) {
+                switch (option.option) {
+                case 'f':
+                        opts.file = option.optarg;
+                        break;
+
+                case 'v':
+                        // Allows us to set -vvv -> this little hackery
+                        // just ensures that we're never < TRACE
+                        LOG.level(Math.max(bunyan.TRACE, (LOG.level() - 10)));
+                        if (LOG.level() <= bunyan.DEBUG)
+                                LOG = LOG.child({src: true});
+                        break;
+
+                default:
+                        console.error('invalid option: ' + option.option);
+                        process.exit(1);
+                        break;
+                }
+        }
+
+        ARGV = opts;
+        return (opts);
+}
+
+
+function readConfig(opts) {
         if (!CFG) {
-                var cfg = fs.readFileSync(ARGV.f, 'utf8');
+                var cfg = fs.readFileSync(opts.file, 'utf8');
                 CFG = JSON.parse(cfg);
         }
         return (CFG);
@@ -75,7 +94,8 @@ function zkConnect(opts, callback) {
 
 ///--- Mainline
 
-readConfig();
+readConfig(parseOptions());
+
 zkConnect({log: LOG, zookeeper: CFG.zookeeper}, function (zkErr, zk) {
         if (zkErr)
                 errorAndExit(zkErr, 'Unable to connect to ZooKeeper');
