@@ -6,4 +6,5 @@ docs/*.html
 cscope.in.out
 cscope.po.out
 cscope.out
-smf/manifests/*.xml
+smf/manifests/muppet.xml
+etc/haproxy.cfg

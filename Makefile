@@ -49,6 +49,7 @@ NODE_PREBUILT_VERSION	:= v0.8.9
 NPM_FLAGS :=
 
 include ./tools/mk/Makefile.defs
+include ./tools/mk/Makefile.haproxy.defs
 include ./tools/mk/Makefile.node_prebuilt.defs
 include ./tools/mk/Makefile.node_deps.defs
 include ./tools/mk/Makefile.smf.defs
@@ -65,7 +66,7 @@ TMPDIR                  := /tmp/$(STAMP)
 # Repo-specific targets
 #
 .PHONY: all
-all: $(SMF_MANIFESTS) | $(NODEUNIT) $(REPO_DEPS)
+all: $(SMF_MANIFESTS) | $(NODEUNIT) $(REPO_DEPS) $(HAPROXY_EXEC)
 	$(NPM) install
 
 $(NODEUNIT): | $(NPM_EXEC)
@@ -107,6 +108,7 @@ publish: release
 
 
 include ./tools/mk/Makefile.deps
+include ./tools/mk/Makefile.haproxy.targ
 include ./tools/mk/Makefile.node_prebuilt.targ
 include ./tools/mk/Makefile.node_deps.targ
 include ./tools/mk/Makefile.smf.targ

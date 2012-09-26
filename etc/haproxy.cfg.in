@@ -39,7 +39,7 @@ frontend http
          reqidel ^x-secure:.*
 
 frontend https
-         bind *:8443
+         bind *:8443 accept-proxy
          mode http
          default_backend api
          reqadd x-secure:\ true
