@@ -7,4 +7,4 @@ cscope.in.out
 cscope.po.out
 cscope.out
 smf/manifests/muppet.xml
-etc/haproxy.cfg
+#etc/haproxy.cfg
