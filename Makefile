@@ -86,6 +86,7 @@ release: all docs $(SMF_MANIFESTS)
 	@touch $(TMPDIR)/site/.do-not-delete-me
 	@mkdir -p $(TMPDIR)/root
 	@mkdir -p $(TMPDIR)/root/opt/smartdc/$(MY_NAME)/etc
+	@cp $(ROOT)/etc/haproxy.cfg $(TMPDIR)/root/opt/smartdc/$(MY_NAME)/etc
 	@cp $(ROOT)/etc/haproxy.cfg.in $(TMPDIR)/root/opt/smartdc/$(MY_NAME)/etc
 	cp -r   $(ROOT)/build \
 		$(ROOT)/lib \
