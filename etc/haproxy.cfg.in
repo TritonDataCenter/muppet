@@ -11,6 +11,7 @@ defaults
         log     global
         option  dontlognull
         option  dontlog-normal
+	option  httpclose
         timeout connect 500
         timeout client  30000
         timeout server  30000
