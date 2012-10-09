@@ -1,0 +1,23 @@
+{
+        "frontend": {
+                "port": 80,
+                "studPort": 8443,
+                "idleTimeout": 30000
+        },
+        "numWorkers": 4,
+        "upstream": {
+                "servers": [
+                        "10.2.209.146",
+                        "10.2.209.223",
+                        "10.2.209.54"
+                ],
+                "connectTimeout": 1000,
+                "insecurePort": 81,
+                "healthCheck": {
+                        "interval": 15000,
+                        "maxFailures": 2,
+                        "timeout": 4000
+                },
+                "port": 80
+        }
+}

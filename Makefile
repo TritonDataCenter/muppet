@@ -31,25 +31,24 @@ PATH	:= $(NODE_INSTALL)/bin:${PATH}
 # Files
 #
 DOC_FILES	 = index.restdown
-JS_FILES	:= $(shell ls *.js) $(shell find lib test -name '*.js')
+JS_FILES	:= $(shell ls *.js) $(shell find lib test -name '*.js' | grep -v buckets)
 JSL_CONF_NODE	 = tools/jsl.node.conf
 JSL_FILES_NODE   = $(JS_FILES)
 JSSTYLE_FILES	 = $(JS_FILES)
 JSSTYLE_FLAGS    = -f tools/jsstyle.conf
-SMF_MANIFESTS_IN = smf/manifests/$(MY_NAME).xml.in
+SMF_MANIFESTS_IN = smf/manifests/$(MY_NAME).xml.in smf/manifests/loadbalancer.xml.in
 
 #
 # Variables
 #
 
 NODE_PREBUILT_TAG	= zone
-NODE_PREBUILT_VERSION	:= v0.8.9
+NODE_PREBUILT_VERSION	:= v0.8.11
 
 # RELENG-341: no npm cache is making builds unreliable
 NPM_FLAGS :=
 
 include ./tools/mk/Makefile.defs
-include ./tools/mk/Makefile.haproxy.defs
 include ./tools/mk/Makefile.node_prebuilt.defs
 include ./tools/mk/Makefile.node_deps.defs
 include ./tools/mk/Makefile.smf.defs
@@ -66,7 +65,7 @@ TMPDIR                  := /tmp/$(STAMP)
 # Repo-specific targets
 #
 .PHONY: all
-all: $(SMF_MANIFESTS) | $(NODEUNIT) $(REPO_DEPS) $(HAPROXY_EXEC)
+all: $(SMF_MANIFESTS) | $(NODEUNIT) $(REPO_DEPS)
 	$(NPM) install
 
 $(NODEUNIT): | $(NPM_EXEC)
@@ -81,14 +80,24 @@ test: $(NODEUNIT)
 .PHONY: release
 release: all docs $(SMF_MANIFESTS)
 	@echo "Building $(RELEASE_TARBALL)"
-	@mkdir -p $(TMPDIR)/root/opt/smartdc/$(MY_NAME)
 	@mkdir -p $(TMPDIR)/site
 	@touch $(TMPDIR)/site/.do-not-delete-me
-	@mkdir -p $(TMPDIR)/root
+	@mkdir -p $(TMPDIR)/root/opt/smartdc/$(MY_NAME)/deps
+	@cp $(ROOT)/deps/buckets.js \
+		$(TMPDIR)/root/opt/smartdc/$(MY_NAME)/deps
 	@mkdir -p $(TMPDIR)/root/opt/smartdc/$(MY_NAME)/etc
-	@cp $(ROOT)/etc/haproxy.cfg $(TMPDIR)/root/opt/smartdc/$(MY_NAME)/etc
-	@cp $(ROOT)/etc/haproxy.cfg.in $(TMPDIR)/root/opt/smartdc/$(MY_NAME)/etc
+	@mkdir -p $(TMPDIR)/root/opt/smartdc/$(MY_NAME)/smf/manifests
+	@cp $(ROOT)/etc/loadbalancer.json.in \
+		$(TMPDIR)/root/opt/smartdc/$(MY_NAME)/etc/loadbalancer.json
+	@cp $(ROOT)/etc/loadbalancer.json.in \
+		$(TMPDIR)/root/opt/smartdc/$(MY_NAME)/etc
+	@cp $(ROOT)/smf/manifests/loadbalancer.xml \
+		$(TMPDIR)/root/opt/smartdc/$(MY_NAME)/smf/manifests
+	@cp $(ROOT)/smf/manifests/$(MY_NAME).xml \
+		$(TMPDIR)/root/opt/smartdc/$(MY_NAME)/smf/manifests
+
 	cp -r   $(ROOT)/build \
+		$(ROOT)/lb.js \
 		$(ROOT)/lib \
 		$(ROOT)/main.js \
 		$(ROOT)/node_modules \
@@ -109,7 +118,6 @@ publish: release
 
 
 include ./tools/mk/Makefile.deps
-include ./tools/mk/Makefile.haproxy.targ
 include ./tools/mk/Makefile.node_prebuilt.targ
 include ./tools/mk/Makefile.node_deps.targ
 include ./tools/mk/Makefile.smf.targ

@@ -3,7 +3,7 @@
 <!-- Copyright (c) 2012, Joyent, Inc. All rights reserved. -->
 
 <service_bundle type="manifest" name="muppet">
-    <service name="manta/muppet" type="service" version="1">
+    <service name="manta/loadbalancer" type="service" version="1">
 	<create_default_instance enabled="false" />
 	<single_instance />
 
@@ -23,17 +23,17 @@
 
 	<exec_method type="method"
 		     name="start"
-		     exec="node main.js -f ./etc/config.json &amp;"
+		     exec="node ./lb.js -f ./etc/loadbalancer.json &amp;"
 		     timeout_seconds="10">
 	    <method_context working_directory="/opt/smartdc/muppet">
-                <method_credential user="root"
-                                   group="root"
+                <method_credential user="nobody"
+                                   group="nobody"
                                    privileges="basic,net_privaddr"/>
                 <method_environment>
                     <envvar name="PATH"
-                            value="/opt/smartdc/muppet/build/node/bin:/opt/local/bin:/usr/bin:/usr/sbin:/bin"/>
+                            value="/opt/smartdc/muppet/build/node/bin"/>
                     <envvar name="LD_PRELOAD_32"
-                            value="/usr/lib/extendedFILE.so.1" />
+			    value="/usr/lib/extendedFILE.so.1" />
 		</method_environment>
             </method_context>
 	</exec_method>
@@ -45,9 +45,9 @@
 
 	<template>
 	    <common_name>
-		<loctext xml:lang="C">Load Balancer Config Service</loctext>
+		<loctext xml:lang="C">Manta Load Balancer</loctext>
 	    </common_name>
 	</template>
 
-</service>
+    </service>
 </service_bundle>

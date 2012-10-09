@@ -1,8 +1,8 @@
 # Muppet
 
-Muppet is a custom haproxy (patched) and small daemon that interacts with
-ZooKeeper via registrar.  The muppet daemon will update haproxy with new
-configuration as hosts come and go from the given service name.
+Muppet is a custom TCP loadbalancer and small daemon that interacts with
+ZooKeeper via registrar.  The muppet daemon will update the loadbalancer with
+new configuration as hosts come and go from the given service name.
 
 # Development
 

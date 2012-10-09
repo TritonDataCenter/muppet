@@ -111,25 +111,25 @@ zkConnect({log: LOG, zookeeper: CFG.zookeeper}, function (zkErr, zk) {
                         errorAndExit(watchErr, 'Unable to set watch');
 
                 watch.on('hosts', function onHosts(hosts) {
-                        core.updateHAProxyConfig(hosts, function (updateErr) {
+                        core.updateLBConfig(hosts, function (updateErr) {
                                 if (updateErr) {
                                         LOG.error({
                                                 err: updateErr
-                                        }, 'haproxy config update failed');
+                                        }, 'lb config update failed');
                                         return;
                                 }
 
-                                core.restartHAProxy(function (restartErr) {
+                                core.restartLB(function (restartErr) {
                                         if (restartErr) {
                                                 LOG.error({
                                                         err: restartErr
-                                                }, 'haproxy restart failed');
+                                                }, 'lb restart failed');
                                                 return;
                                         }
 
                                         LOG.info({
                                                 hosts: hosts
-                                        }, 'haproxy restarted');
+                                        }, 'lb restarted');
                                         return;
                                 });
                                 return;

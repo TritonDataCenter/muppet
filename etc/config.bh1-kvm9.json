@@ -1,0 +1,13 @@
+{
+        "name": "manta.bh1-kvm9.joyent.us",
+        "srvce": "_http",
+        "proto": "_tcp",
+        "port": 80,
+        "zookeeper": {
+                "servers": [ {
+                        "host": "10.2.209.224",
+                        "port": 2181
+                } ],
+                "timeout": 1000
+        }
+}

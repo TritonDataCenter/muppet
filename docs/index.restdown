@@ -1,31 +1,209 @@
 ---
-title: Muppet: HAProxy configuration
+title: Muppet: Manta loadbalancer
 markdown2extras: wiki-tables, code-friendly
 apisections:
 ---
 
 # tl;dr
 
-muppet is a daemon that watches for API servers to appear in ZooKeeper, and
-updates haproxy accordingly.
+muppet is a custom loadbalancing solution with a TCP loadbalancer, stud (for SSL
+termination) and a daemon that watches group membership changes in ZooKeeper.
 
-There really isn't much you configure; this just watches some configured "DNS
-path" in ZooKeeper, and rewrites haproxy config (in the same directory).  Note
-that haproxy is bundled with muppet as we need a patched version that supports
-getting the `x-forwarded-for` from stud (the TLS daemon), which is colocated
-with haproxy/muppet (but installed via pkgsrc).
+# Overview
 
-# What you need to do
+The loadbalancer can actually be used without the ZooKeeper tie-in, as the ZK
+logic is self-contained in a separate process (muppet).  To use the loadbalancer
+you'll want stud (available via pkgsrc) installed and configured, and then you
+can create a loadbalancer configuration (see below) that fronts your backend
+servers.
 
-To use muppet, you'll need to install it to `/opt/smartdc/muppet`, via
-the usual JEG way (SMF), generate a config file in
-`/opt/smartdc/muppet/etc/config.json` as described below.
+It is important to note that this loadbalancer does not terminate HTTP, so
+backend servers are going to see the loadbalancer as the client IP address;
+manta post-processes WebAPI (muskie) logs along with loadbalancer logs to
+rewrite them such that we have accurate dashboards based on the real
+source ip.
 
-You'll additionally need to import the SMF service for haproxy, and optionally
-pkgin stud (and enable it). See manta.git for a reference stud.config; you
-really can use just the defaults but turn on `write-proxy` (source IP).
+In manta at least, all configuration of the load balancer is automatically
+managed by the muppet service, which watches for registrar changes in
+ZooKeeper.  This simply updates the upstream server list of IP addresses
+and restarts the loadbalancer service (not gracefully...).
 
-## Sample config
+# Configuration
+
+## Stud
+
+This configuration assumes that stud is going to listen on 443, and proxy to
+`127.0.0.1:8443`; note that `sendproxy` must be turned on, as the loadbalancer
+assumes the remote IP address is sent over by stud.
+
+    #
+    # stud(8), The Scalable TLS Unwrapping Daemon's configuration
+    #
+
+    # NOTE: all config file parameters can be overriden
+    #       from command line!
+
+    # Listening address. REQUIRED.
+    #
+    # type: string
+    # syntax: [HOST]:PORT
+    frontend = "[*]:443"
+
+    # Upstream server address. REQUIRED.
+    #
+    # type: string
+    # syntax: [HOST]:PORT.
+    backend = "[127.0.0.1]:8443"
+
+    # SSL x509 certificate file. REQUIRED.
+    # List multiple certs to use SNI. Certs are used in the order they
+    # are listed; the last cert listed will be used if none of the others match
+    #
+    # type: string
+    pem-file = /opt/local/etc/server.pem
+
+    # SSL protocol.
+    #
+    tls = on
+    ssl = on
+
+    # List of allowed SSL ciphers.
+    #
+    # Run openssl ciphers for list of available ciphers.
+    # type: string
+    ciphers = ""
+
+    # Enforce server cipher list order
+    #
+    # type: boolean
+    prefer-server-ciphers = on
+
+    # Use specified SSL engine
+    #
+    # type: string
+    ssl-engine = ""
+
+    # Number of worker processes
+    #
+    # type: integer
+    workers = 4
+
+    # Listen backlog size
+    #
+    # type: integer
+    backlog = 100
+
+    # TCP socket keepalive interval in seconds
+    #
+    # type: integer
+    keepalive = 3600
+
+    # Chroot directory
+    #
+    # type: string
+    chroot = ""
+
+    # Set uid after binding a socket
+    #
+    # type: string
+    user = "stud"
+
+    # Set gid after binding a socket
+    #
+    # type: string
+    group = "stud"
+
+    # Quiet execution, report only error messages
+    #
+    # type: boolean
+    quiet = off
+
+    # Use syslog for logging
+    #
+    # type: boolean
+    syslog = off
+
+    # Syslog facility to use
+    #
+    # type: string
+    syslog-facility = "daemon"
+
+    # Run as daemon
+    #
+    # type: boolean
+    daemon = on
+
+    # Report client address by writing IP before sending data
+    #
+    # NOTE: This option is mutually exclusive with option write-proxy and proxy-proxy.
+    #
+    # type: boolean
+    write-ip = off
+
+    # Report client address using SENDPROXY protocol, see
+    # http://haproxy.1wt.eu/download/1.5/doc/proxy-protocol.txt
+    # for details.
+    #
+    # NOTE: This option is mutually exclusive with option write-ip and proxy-proxy.
+    #
+    # type: boolean
+    write-proxy = on
+
+    # Proxy an existing SENDPROXY protocol header through this request.
+    #
+    # NOTE: This option is mutually exclusive with option write-ip and write-proxy.
+    #
+    # type: boolean
+    proxy-proxy = off
+
+
+### Generate an OpenSSL Certificate
+
+Run this command:
+
+    $ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+        -keyout /opt/local/etc/server.pem -out /opt/local/etc/server.pem \
+        -subj "/C=US/ST=CA/O=Joyent/OU=manta/CN=localhost
+
+## Load Balancer
+
+If you're familiar with HAProxy, or any other traditional "frontend/backend"
+configured loadbalanacer, this is pretty straight-forward.  Define a `frontend`
+section that defines what the customer-facing side listens on; studPort is only
+opened on `127.0.0.1`, and is how we switch on whether a request was SSL, and
+pick which backend port to send to. Which brings us to the backend; the backend
+defines a list of IPs to load balance between (least conns), connectTimeout and
+port information to use, and additionally a health checking block that gets run
+periodically.
+
+    {
+            "frontend": {
+                    "port": 80,
+                    "studPort": 8443,
+                    "idleTimeout": 30000
+            },
+            "numWorkers": 4,
+            "upstream": {
+                    "servers": [
+                            "10.2.209.146",
+                            "10.2.209.223",
+                            "10.2.209.54"
+                    ],
+                    "connectTimeout": 1000,
+                    "insecurePort": 81,
+                    "healthCheck": {
+                            "interval": 15000,
+                            "maxFailures": 2,
+                            "timeout": 4000
+                    },
+                    "port": 80
+            }
+    }
+
+
+
+
+## Muppet
 
 *name* is really the important variable here, as that dicatates the path in
 ZooKeeper to watch (note the DNS name is reversed and turned into a `/`
