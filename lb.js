@@ -54,7 +54,7 @@ var LOG = bunyan.createLogger({
                                 obj = {
                                         address: ip,
                                         family: 'IPv4',
-                                        port: obj.srcp
+                                        port: c.srcp
                                 };
                         } else if (c.remoteAddress) {
                                 obj = {
