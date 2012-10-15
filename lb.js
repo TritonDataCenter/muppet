@@ -35,7 +35,7 @@ var GATEWAY_ERROR =
         'x-server-name: ' + os.hostname() + '\r\n' +
         '\r\n';
 
-var LOAD_FACTOR =  Math.pow(2,16) - 1;
+var LOAD_FACTOR = Math.pow(2, 16) - 1;
 var LOG = bunyan.createLogger({
         level: (process.env.LOG_LEVEL || 'info'),
         name: 'muppet-lb',
@@ -180,7 +180,7 @@ function pauseStream(stream) {
         stream.pause();
 
         stream._resume = stream.resume;
-        stream.resume = function _resume() {
+        stream.resume = function _lb_resume() {
                 if (!stream.__lb_paused)
                         return;
 
@@ -231,7 +231,7 @@ function healthCheck(host) {
                 agent: false,
                 connectTimeout: CFG.upstream.connectTimeout,
                 log: LOG.child({component: 'health-check'}, true),
-                url: 'http://' + host.ip + ':80',
+                url: 'http://' + host.ip + ':80'
         });
         var done = false;
         var ip = host.ip;
@@ -289,10 +289,9 @@ function createProxySocket(conn, secure, cb) {
         }
 
         TABLE.remove(host);
-        host.load++
+        host.load++;
         TABLE.add(host);
 
-        var done = false;
         var socket;
         var t;
 
@@ -319,7 +318,7 @@ function createProxySocket(conn, secure, cb) {
                         LOG.debug({
                                 err: err,
                                 remote: conn,
-                                upstream: socket,
+                                upstream: socket
                         }, '%s error encountered', which);
                 }
 
@@ -457,9 +456,9 @@ function proxy(c) {
                 pauseStream(c);
 
                 LOG.debug(obj, 'PROXY protocol parsed');
-                createProxySocket(c, true, function (err, sock) {
-                        if (err) {
-                                LOG.warn(err, 'unable to proxy (secure)');
+                createProxySocket(c, true, function (err2, sock) {
+                        if (err2) {
+                                LOG.warn(err2, 'unable to proxy (secure)');
                                 send504Error(c);
                                 return;
                         }
