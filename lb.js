@@ -168,22 +168,33 @@ function pauseStream(stream) {
                 stream.__buffered.push(chunk);
         }
 
+        function _catchEnd(chunk) {
+                stream.__lb_ended = true;
+        }
+
+        stream.__lb_ended = false;
         stream.__lb_paused = true;
         stream.__buffered = [];
         stream.on('data', _buffer);
+        stream.once('end', _catchEnd);
         stream.pause();
 
         stream._resume = stream.resume;
-        stream.resume = function myResume() {
-                stream.removeListener('data', _buffer);
+        stream.resume = function _resume() {
+                if (!stream.__lb_paused)
+                        return;
 
-                stream.__buffered.forEach(stream.emit.bind(stream, 'data'));
+                stream.removeListener('data', _buffer);
+                stream.removeListener('end', _catchEnd);
 
                 stream.__lb_paused = false;
-                stream._resume();
+                stream.__buffered.forEach(stream.emit.bind(stream, 'data'));
+                stream.__buffered.length = 0;
 
-                // check if the request already ended
-                if (!stream.readable)
+                stream._resume();
+                stream.resume = stream._resume;
+
+                if (stream.__lb_ended)
                         stream.emit('end');
         };
 }
@@ -300,8 +311,7 @@ function createProxySocket(conn, secure, cb) {
                         }, 'remote socket closed');
                 }
 
-                conn.removeListener('error', onError);
-                socket.end();
+                // conn.removeListener('error', onError);
         }
 
         function onError(which, err) {
@@ -393,7 +403,6 @@ function createProxySocket(conn, secure, cb) {
                 TABLE.add(host);
 
                 socket.removeListener('error', onError);
-                conn.end();
         }
 
         socket = net.createConnection({
