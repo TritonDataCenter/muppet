@@ -308,8 +308,8 @@ function createProxySocket(conn, secure, cb) {
                 if (LOG.debug()) {
                         LOG.debug({
                                 err: err,
-                                remote: c,
-                                upstream: sock,
+                                remote: conn,
+                                upstream: socket,
                         }, '%s error encountered', which);
                 }
 
