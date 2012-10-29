@@ -38,7 +38,7 @@ SMF_MANIFESTS_IN = smf/manifests/$(MY_NAME).xml.in smf/manifests/loadbalancer.xm
 #
 
 NODE_PREBUILT_TAG	= zone
-NODE_PREBUILT_VERSION	:= v0.8.11
+NODE_PREBUILT_VERSION	:= v0.8.12
 
 # RELENG-341: no npm cache is making builds unreliable
 NPM_FLAGS :=
