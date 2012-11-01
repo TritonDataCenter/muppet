@@ -1,0 +1,12 @@
+{
+        "name": "manta.coal.joyent.us",
+        "zookeeper": {
+                "connectTimeout": 1000,
+                "servers": [ {
+                        "host": "10.99.99.150",
+                        "port": 2181
+                } ],
+                "timeout": 6000
+        },
+        "restart": "sudo svcadm restart haproxy"
+}

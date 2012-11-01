@@ -28,10 +28,10 @@ NODEUNIT	:= ./node_modules/.bin/nodeunit
 DOC_FILES	 = index.restdown
 JS_FILES	:= $(shell ls *.js) $(shell find lib test -name '*.js' | grep -v buckets)
 JSL_CONF_NODE	 = tools/jsl.node.conf
-JSL_FILES_NODE   = $(JS_FILES)
+JSL_FILES_NODE	 = $(JS_FILES)
 JSSTYLE_FILES	 = $(JS_FILES)
-JSSTYLE_FLAGS    = -f tools/jsstyle.conf
-SMF_MANIFESTS_IN = smf/manifests/$(MY_NAME).xml.in smf/manifests/loadbalancer.xml.in
+JSSTYLE_FLAGS	 = -f tools/jsstyle.conf
+SMF_MANIFESTS_IN = smf/manifests/$(MY_NAME).xml.in smf/manifests/haproxy.xml.in
 
 #
 # Variables
@@ -40,10 +40,8 @@ SMF_MANIFESTS_IN = smf/manifests/$(MY_NAME).xml.in smf/manifests/loadbalancer.xm
 NODE_PREBUILT_TAG	= zone
 NODE_PREBUILT_VERSION	:= v0.8.12
 
-# RELENG-341: no npm cache is making builds unreliable
-NPM_FLAGS :=
-
 include ./tools/mk/Makefile.defs
+include ./tools/mk/Makefile.haproxy.defs
 include ./tools/mk/Makefile.node_prebuilt.defs
 include ./tools/mk/Makefile.node_deps.defs
 include ./tools/mk/Makefile.smf.defs
@@ -57,15 +55,15 @@ PATH	:= $(NODE_INSTALL)/bin:${PATH}
 # MG Variables
 #
 
-RELEASE_TARBALL         := muppet-pkg-$(STAMP).tar.bz2
-ROOT                    := $(shell pwd)
-TMPDIR                  := /tmp/$(STAMP)
+RELEASE_TARBALL		:= muppet-pkg-$(STAMP).tar.bz2
+ROOT			:= $(shell pwd)
+TMPDIR			:= /tmp/$(STAMP)
 
 #
 # Repo-specific targets
 #
 .PHONY: all
-all: $(SMF_MANIFESTS) | $(NODEUNIT) $(REPO_DEPS)
+all: $(SMF_MANIFESTS) | $(NODEUNIT) $(REPO_DEPS) $(HAPROXY_EXEC)
 	$(NPM) install
 
 $(NODEUNIT): | $(NPM_EXEC)
@@ -83,22 +81,14 @@ release: all docs $(SMF_MANIFESTS)
 	@echo "Building $(RELEASE_TARBALL)"
 	@mkdir -p $(TMPDIR)/site
 	@touch $(TMPDIR)/site/.do-not-delete-me
-	@mkdir -p $(TMPDIR)/root/opt/smartdc/$(MY_NAME)/deps
-	@cp $(ROOT)/deps/buckets.js \
-		$(TMPDIR)/root/opt/smartdc/$(MY_NAME)/deps
 	@mkdir -p $(TMPDIR)/root/opt/smartdc/$(MY_NAME)/etc
 	@mkdir -p $(TMPDIR)/root/opt/smartdc/$(MY_NAME)/smf/manifests
-	@cp $(ROOT)/etc/loadbalancer.json.in \
-		$(TMPDIR)/root/opt/smartdc/$(MY_NAME)/etc/loadbalancer.json
-	@cp $(ROOT)/etc/loadbalancer.json.in \
-		$(TMPDIR)/root/opt/smartdc/$(MY_NAME)/etc
-	@cp $(ROOT)/smf/manifests/loadbalancer.xml \
-		$(TMPDIR)/root/opt/smartdc/$(MY_NAME)/smf/manifests
-	@cp $(ROOT)/smf/manifests/$(MY_NAME).xml \
+	@cp $(ROOT)/etc/haproxy.cfg $(TMPDIR)/root/opt/smartdc/$(MY_NAME)/etc
+	@cp $(ROOT)/etc/haproxy.cfg.in $(TMPDIR)/root/opt/smartdc/$(MY_NAME)/etc
+	@cp $(ROOT)/smf/manifests/*.xml \
 		$(TMPDIR)/root/opt/smartdc/$(MY_NAME)/smf/manifests
 
-	cp -r   $(ROOT)/build \
-		$(ROOT)/lb.js \
+	cp -r	$(ROOT)/build \
 		$(ROOT)/lib \
 		$(ROOT)/main.js \
 		$(ROOT)/node_modules \
@@ -119,6 +109,7 @@ publish: release
 
 
 include ./tools/mk/Makefile.deps
+include ./tools/mk/Makefile.haproxy.targ
 include ./tools/mk/Makefile.node_prebuilt.targ
 include ./tools/mk/Makefile.node_deps.targ
 include ./tools/mk/Makefile.smf.targ

@@ -6,7 +6,7 @@ apisections:
 
 # tl;dr
 
-muppet is a custom loadbalancing solution with a TCP loadbalancer, stud (for SSL
+muppet is a custom loadbalancing solution with a haproxy, stud (for SSL
 termination) and a daemon that watches group membership changes in ZooKeeper.
 
 # Overview
@@ -16,12 +16,6 @@ logic is self-contained in a separate process (muppet).  To use the loadbalancer
 you'll want stud (available via pkgsrc) installed and configured, and then you
 can create a loadbalancer configuration (see below) that fronts your backend
 servers.
-
-It is important to note that this loadbalancer does not terminate HTTP, so
-backend servers are going to see the loadbalancer as the client IP address;
-manta post-processes WebAPI (muskie) logs along with loadbalancer logs to
-rewrite them such that we have accurate dashboards based on the real
-source ip.
 
 In manta at least, all configuration of the load balancer is automatically
 managed by the muppet service, which watches for registrar changes in
@@ -167,41 +161,18 @@ Run this command:
 
 ## Load Balancer
 
-If you're familiar with HAProxy, or any other traditional "frontend/backend"
-configured loadbalanacer, this is pretty straight-forward.  Define a `frontend`
-section that defines what the customer-facing side listens on; studPort is only
-opened on `127.0.0.1`, and is how we switch on whether a request was SSL, and
-pick which backend port to send to. Which brings us to the backend; the backend
-defines a list of IPs to load balance between (least conns), connectTimeout and
-port information to use, and additionally a health checking block that gets run
-periodically.
+The loadbalancer used is just [HAProxy](http://haproxy.1wt.eu/), but with a
+[patch from openwrt](https://dev.openwrt.org/) that lets us get the "real"
+client IP address into the `x-forwarded-for` header.  There is an
+`haproxy.cfg.in` file that is templated with a sparse number of `%s`; this
+file is used to generate a new haproxy.cfg each time the topology of online
+loadbalancers changes.
 
-    {
-            "frontend": {
-                    "port": 80,
-                    "studPort": 8443,
-                    "idleTimeout": 30000
-            },
-            "numWorkers": 4,
-            "upstream": {
-                    "servers": [
-                            "10.2.209.146",
-                            "10.2.209.223",
-                            "10.2.209.54"
-                    ],
-                    "connectTimeout": 1000,
-                    "insecurePort": 81,
-                    "healthCheck": {
-                            "interval": 15000,
-                            "maxFailures": 2,
-                            "timeout": 4000
-                    },
-                    "port": 80
-            }
-    }
-
-
-
+*Important:* Checked into this repo is a "blank" haproxy.cfg - *DO NOT EDIT
+THIS FILE!*.  That file is used as a syntactically correct, but empty
+haproxy.cfg file that we use to bootstrap haproxy _before_ muppet is running.
+Any changes you want to see made to haproxy.cfg must be made in the template
+file, as that's what you really care about.
 
 ## Muppet
 

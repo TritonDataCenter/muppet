@@ -1,6 +1,5 @@
 global
-        log 127.0.0.1   local0
-        log 127.0.0.1   local1 notice
+        log 127.0.0.1 local0
         ulimit-n 65535
         user nobody
         group nobody
@@ -8,43 +7,41 @@ global
         pidfile /var/run/haproxy.pid
 
 defaults
+        balance leastconn
         log     global
-        option  dontlognull
-        option  dontlog-normal
-	option  httpclose
+        maxconn 65535
+	mode http
+        option forwardfor
+	option httplog
+        option redispatch
+        no option httpclose
+        no option http-server-close
+        retries 3
         timeout connect 500
         timeout client  30000
         timeout server  30000
-        option redispatch
-        retries 3
-        maxconn 32768
-        balance roundrobin
-        option forwardfor
-
-frontend stats1
-         mode http
-         bind :8081
-         default_backend haproxy-stats1
-
-backend haproxy-stats1
-        mode http
-        stats enable
-        stats refresh 60s
-        stats uri /
-        stats auth admin:joypass123
-
-frontend http
-         bind *:80
-         mode http
-         default_backend api
-         reqidel ^x-secure:.*
 
 frontend https
-         bind *:8443 accept-proxy
-         mode http
-         default_backend api
-         reqadd x-secure:\ true
+        bind 127.0.0.1:8443 accept-proxy
+        default_backend secure_api
 
-backend api
-        mode http
-        no option http-server-close
+backend secure_api
+	option httpchk GET /ping
+%s
+
+frontend http
+        bind *:80
+        default_backend insecure_api
+
+backend insecure_api
+	option httpchk GET /ping
+%s
+
+frontend stats_http
+         bind %s:8080
+         default_backend haproxy-stats_http
+
+backend haproxy-stats_http
+        stats enable
+        stats refresh 30s
+        stats uri /manta?haproxy_stats

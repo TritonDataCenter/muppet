@@ -3,6 +3,7 @@
 var fs = require('fs');
 
 var assert = require('assert-plus');
+var backoff = require('backoff');
 var bunyan = require('bunyan');
 var getopt = require('posix-getopt');
 var zkplus = require('zkplus');
@@ -13,26 +14,19 @@ var core = require('./lib');
 
 ///--- Globals
 
-var ARGV;
-var CFG;
 var LOG = bunyan.createLogger({
         level: (process.env.LOG_LEVEL || 'info'),
         name: 'muppet',
-        stream: process.stderr,
+        stream: process.stdout,
         serializers: {
                 err: bunyan.stdSerializers.err
         }
 });
+var WATCH;
 
 
 
-///--- Internal Functions
-
-function errorAndExit(err, msg) {
-        LOG.fatal({err: err}, msg);
-        process.exit(1);
-}
-
+///--- CLI Functions
 
 function parseOptions() {
         var option;
@@ -54,39 +48,98 @@ function parseOptions() {
                         break;
 
                 default:
-                        console.error('invalid option: ' + option.option);
-                        process.exit(1);
+                        usage();
                         break;
                 }
         }
 
-        ARGV = opts;
         return (opts);
 }
 
 
-function readConfig(opts) {
-        if (!CFG) {
-                var cfg = fs.readFileSync(opts.file, 'utf8');
-                CFG = JSON.parse(cfg);
+function readConfig(fname) {
+        var cfg;
+        var file;
+
+        try {
+                file = fs.readFileSync(fname, 'utf8');
+        } catch (e) {
+                LOG.fatal(e, 'unable to read %s', fname);
+                process.exit(1);
         }
-        return (CFG);
+        try {
+                cfg = JSON.parse(file);
+        } catch (e) {
+                LOG.fatal(e, 'invalid JSON in %s', fname);
+                process.exit(1);
+        }
+
+        return (cfg);
 }
 
 
-function zkConnect(opts, callback) {
-        var zk = zkplus.createClient({
-                log: opts.log,
-                servers: opts.zookeeper.servers,
-                timeout: opts.zookeeper.timeout
+function usage(msg) {
+        if (msg)
+                console.error(msg);
+
+        var str = 'usage: ' + require('path').basename(process.argv[1]);
+        str += '[-v] [-f file]';
+        console.error(str);
+        process.exit(1);
+}
+
+
+
+///--- Internal Functions
+
+function onZooKeeperClient(opts, zk) {
+        assert.object(opts, 'options');
+        assert.object(opts.log, 'options.log');
+        assert.string(opts.name, 'options.name');
+
+
+        var log = opts.log;
+        log.info({
+                zk: zk.toString()
+        }, 'ZooKeeper client acquired');
+
+        if (WATCH) {
+                WATCH.stop();
+                WATCH = null;
+        }
+
+        WATCH = new core.createWatch({
+                domain: opts.name,
+                log: log,
+                zk: zk
         });
-        zk.once('error', function onInitialError(err) {
-                zk.removeAllListeners('connect');
-                callback(err);
-        });
-        zk.once('connect', function onConnect() {
-                zk.removeAllListeners('error');
-                callback(null, zk);
+
+        WATCH.start(function onStart(start_err) {
+                if (start_err) {
+                        LOG.fatal(start_err, 'unable to set watch');
+                        process.exit(1);
+                }
+
+                WATCH.on('hosts', function onHosts(hosts) {
+                        var _opts = {
+                                hosts: hosts || [],
+                                log: log,
+                                restart: opts.restart
+                        };
+                        core.restartLB(_opts, function (err) {
+                                if (err) {
+                                        LOG.error({
+                                                hosts: hosts,
+                                                err: err
+                                        }, 'lb restart failed');
+                                        return;
+                                }
+
+                                LOG.info({
+                                        hosts: hosts
+                                }, 'lb restarted');
+                        });
+                });
         });
 }
 
@@ -94,50 +147,16 @@ function zkConnect(opts, callback) {
 
 ///--- Mainline
 
-readConfig(parseOptions());
+var ARGV = parseOptions();
+var CFG = readConfig(ARGV.file);
 
-zkConnect({log: LOG, zookeeper: CFG.zookeeper}, function (zkErr, zk) {
-        if (zkErr)
-                errorAndExit(zkErr, 'Unable to connect to ZooKeeper');
+CFG.log = LOG;
+CFG.zookeeper.log = LOG;
+core.createZooKeeperClient(CFG.zookeeper, function (err, listener) {
+        if (err) {
+                LOG.fatal(err, 'unable to create ZooKeeper client');
+                process.exit(1);
+        }
 
-        var watch = new core.createWatch({
-                domain: CFG.name,
-                log: LOG,
-                zk: zk
-        });
-
-        watch.start(function (watchErr) {
-                if (watchErr)
-                        errorAndExit(watchErr, 'Unable to set watch');
-
-                watch.on('hosts', function onHosts(hosts) {
-                        core.updateLBConfig(hosts, function (updateErr) {
-                                if (updateErr) {
-                                        LOG.error({
-                                                err: updateErr
-                                        }, 'lb config update failed');
-                                        return;
-                                }
-
-                                core.restartLB(function (restartErr) {
-                                        if (restartErr) {
-                                                LOG.error({
-                                                        err: restartErr
-                                                }, 'lb restart failed');
-                                                return;
-                                        }
-
-                                        LOG.info({
-                                                hosts: hosts
-                                        }, 'lb restarted');
-                                        return;
-                                });
-                                return;
-                        });
-                });
-        });
-});
-
-process.on('uncaughtException', function (err) {
-        errorAndExit(err, 'uncaughtException');
+        listener.on('client', onZooKeeperClient.bind(null, CFG));
 });
