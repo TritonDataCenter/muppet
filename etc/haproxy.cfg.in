@@ -43,4 +43,4 @@ frontend stats_http
 backend haproxy-stats_http
         stats enable
         stats refresh 30s
-        stats uri /ops
+        stats uri /
