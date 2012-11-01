@@ -122,6 +122,7 @@ function onZooKeeperClient(opts, zk) {
 
                 WATCH.on('hosts', function onHosts(hosts) {
                         var _opts = {
+                                adminIp: opts.adminIp,
                                 hosts: hosts || [],
                                 log: log,
                                 restart: opts.restart

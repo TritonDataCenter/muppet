@@ -1,9 +1,10 @@
 {
         "name": "manta.coal.joyent.us",
+        "adminIp": "127.0.0.1",
         "zookeeper": {
                 "connectTimeout": 1000,
                 "servers": [ {
-                        "host": "10.99.99.150",
+                        "host": "10.99.99.11",
                         "port": 2181
                 } ],
                 "timeout": 6000
