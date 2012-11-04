@@ -28,7 +28,6 @@ frontend https
 backend secure_api
 	option httpchk GET /ping
 
-
 frontend http
         bind *:80
         default_backend insecure_api
