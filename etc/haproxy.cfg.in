@@ -20,27 +20,33 @@ defaults
         timeout client  30000
         timeout server  30000
 
-frontend https
-        bind 127.0.0.1:8443 accept-proxy
-        default_backend secure_api
-
 backend secure_api
 	option httpchk GET /ping
 %s
-
-frontend http
-        bind *:80
-        default_backend insecure_api
 
 backend insecure_api
 	option httpchk GET /ping
 %s
 
-frontend stats_http
-         bind %s:8080
-         default_backend haproxy-stats_http
-
 backend haproxy-stats_http
         stats enable
         stats refresh 30s
         stats uri /
+
+frontend https
+        bind 127.0.0.1:8443 accept-proxy
+        default_backend secure_api
+
+frontend http_external
+        bind %s:80
+        default_backend secure_api
+
+
+frontend http_internal
+        bind %s:80
+        default_backend insecure_api
+
+
+frontend stats_http
+         bind %s:8080
+         default_backend haproxy-stats_http
