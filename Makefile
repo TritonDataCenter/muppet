@@ -85,6 +85,7 @@ release: all docs $(SMF_MANIFESTS)
 	@mkdir -p $(TMPDIR)/root/opt/smartdc/$(MY_NAME)/smf/manifests
 	@cp $(ROOT)/etc/haproxy.cfg.default $(TMPDIR)/root/opt/smartdc/$(MY_NAME)/etc
 	@cp $(ROOT)/etc/haproxy.cfg.in $(TMPDIR)/root/opt/smartdc/$(MY_NAME)/etc
+	@cp $(ROOT)/etc/*.http $(TMPDIR)/root/opt/smartdc/$(MY_NAME)/etc
 	@cp $(ROOT)/smf/manifests/*.xml \
 		$(TMPDIR)/root/opt/smartdc/$(MY_NAME)/smf/manifests
 
