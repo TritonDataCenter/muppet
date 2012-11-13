@@ -1,0 +1,9 @@
+HTTP/1.1 503 Service Unavailable
+Server: Manta
+Cache-Control: no-cache
+Connection: close
+Content-Length: 80
+Content-Type: application/json
+Retry-After: 60
+
+{"NoApiServersAvailable": "Manta is unavailable to serve requests at this time"}

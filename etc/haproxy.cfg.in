@@ -9,9 +9,9 @@ defaults
         balance leastconn
         log     global
         maxconn 65535
-	mode http
+        mode http
         option forwardfor
-	option httplog
+        option httplog
         option redispatch
         no option httpclose
         no option http-server-close
@@ -19,13 +19,18 @@ defaults
         timeout connect 500
         timeout client  30000
         timeout server  30000
+        errorfile 400 /opt/smartdc/muppet/etc/400.http
+        errorfile 408 /opt/smartdc/muppet/etc/408.http
+        errorfile 500 /opt/smartdc/muppet/etc/503.http
+        errorfile 503 /opt/smartdc/muppet/etc/503.http
+        errorfile 504 /opt/smartdc/muppet/etc/503.http
 
 backend secure_api
-	option httpchk GET /ping
+        option httpchk GET /ping
 %s
 
 backend insecure_api
-	option httpchk GET /ping
+        option httpchk GET /ping
 %s
 
 backend haproxy-stats_http

@@ -1,0 +1,8 @@
+HTTP/1.1 408 Request Timeout
+Server: Manta
+Cache-Control: no-cache
+Connection: close
+Content-Length: 54
+Content-Type: application/json
+
+{"IdleClientError": "Server waited too long for data"}
