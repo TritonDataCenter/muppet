@@ -23,6 +23,7 @@ var LOG = bunyan.createLogger({
         }
 });
 var WATCH;
+var ZK;
 
 
 
@@ -92,15 +93,9 @@ function usage(msg) {
 
 ///--- Internal Functions
 
-function onZooKeeperClient(opts, zk) {
-        assert.object(opts, 'options');
-        assert.object(opts.log, 'options.log');
-        assert.string(opts.name, 'options.name');
-
-
-        var log = opts.log;
-        log.info({
-                zk: zk.toString()
+function onZooKeeperConnect() {
+        LOG.info({
+                zk: ZK.toString()
         }, 'ZooKeeper client acquired');
 
         if (WATCH) {
@@ -109,9 +104,9 @@ function onZooKeeperClient(opts, zk) {
         }
 
         WATCH = new core.createWatch({
-                domain: opts.name,
-                log: log,
-                zk: zk
+                domain: CFG.name,
+                log: LOG,
+                zk: ZK
         });
 
         WATCH.start(function onStart(start_err) {
@@ -121,14 +116,14 @@ function onZooKeeperClient(opts, zk) {
                 }
 
                 WATCH.on('hosts', function onHosts(hosts) {
-                        var _opts = {
-                                adminIp: opts.adminIp,
-                                externalIp: opts.externalIp,
+                        var opts = {
+                                adminIp: CFG.adminIp,
+                                externalIp: CFG.externalIp,
                                 hosts: hosts || [],
-                                log: log,
-                                restart: opts.restart
+                                log: LOG,
+                                restart: CFG.restart
                         };
-                        core.restartLB(_opts, function (err) {
+                        core.restartLB(opts, function (err) {
                                 if (err) {
                                         LOG.error({
                                                 hosts: hosts,
@@ -154,11 +149,9 @@ var CFG = readConfig(ARGV.file);
 
 CFG.log = LOG;
 CFG.zookeeper.log = LOG;
-core.createZooKeeperClient(CFG.zookeeper, function (err, listener) {
-        if (err) {
-                LOG.fatal(err, 'unable to create ZooKeeper client');
-                process.exit(1);
-        }
 
-        listener.on('client', onZooKeeperClient.bind(null, CFG));
-});
+ZK = zkplus.createClient(CFG.zookeeper);
+
+ZK.once('connect', onZooKeeperConnect);
+
+ZK.connect();
