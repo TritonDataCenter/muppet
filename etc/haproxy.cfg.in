@@ -4,6 +4,7 @@ global
         group nobody
         daemon
         pidfile /var/run/haproxy.pid
+        log-send-hostname %s
 
 defaults
         balance leastconn
