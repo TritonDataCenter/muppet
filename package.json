@@ -6,7 +6,7 @@
         "private": true,
         "dependencies": {
                 "assert-plus": "0.1.2",
-                "backoff": "2.0.0",
+                "backoff": "1.2.0",
                 "bunyan": "0.18.2",
                 "node-uuid": "1.4.0",
                 "posix-getopt": "1.0.0",
