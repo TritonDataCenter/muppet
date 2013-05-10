@@ -1,11 +1,12 @@
-// Copyright (c) 2012, Joyent, Inc. All rights reserved.
+// Copyright (c) 2013, Joyent, Inc. All rights reserved.
 
 var fs = require('fs');
 
 var assert = require('assert-plus');
 var backoff = require('backoff');
 var bunyan = require('bunyan');
-var getopt = require('posix-getopt');
+var dashdash = require('dashdash');
+var once = require('once');
 var zkplus = require('zkplus');
 
 var core = require('./lib');
@@ -15,143 +16,234 @@ var core = require('./lib');
 ///--- Globals
 
 var LOG = bunyan.createLogger({
-        level: (process.env.LOG_LEVEL || 'info'),
-        name: 'muppet',
-        stream: process.stdout,
-        serializers: {
-                err: bunyan.stdSerializers.err
-        }
+    level: (process.env.LOG_LEVEL || 'info'),
+    name: 'muppet',
+    stream: process.stdout,
+    serializers: {
+        err: bunyan.stdSerializers.err
+    }
 });
-var WATCH;
-var ZK;
+var OPTIONS = [
+    {
+        names: ['help', 'h'],
+        type: 'bool',
+        help: 'Print this help and exit.'
+    },
+    {
+        names: ['verbose', 'v'],
+        type: 'arrayOfBool',
+        help: 'Verbose output. Use multiple times for more verbose.'
+    },
+    {
+        names: ['file', 'f'],
+        type: 'string',
+        help: 'File to process',
+        helpArg: 'FILE'
+    }
+];
 
 
 
 ///--- CLI Functions
 
-function parseOptions() {
-        var option;
-        var opts = {};
-        var parser = new getopt.BasicParser('vf:(file)', process.argv);
+function configure() {
+    var cfg;
+    var opts;
+    var parser = new dashdash.Parser({options: OPTIONS});
 
-        while ((option = parser.getopt()) !== undefined) {
-                switch (option.option) {
-                case 'f':
-                        opts.file = option.optarg;
-                        break;
+    try {
+        opts = parser.parse(process.argv);
+        assert.object(opts, 'options');
+    } catch (e) {
+        LOG.fatal(e, 'invalid options');
+        process.exit(1);
+    }
 
-                case 'v':
-                        // Allows us to set -vvv -> this little hackery
-                        // just ensures that we're never < TRACE
-                        LOG.level(Math.max(bunyan.TRACE, (LOG.level() - 10)));
-                        if (LOG.level() <= bunyan.DEBUG)
-                                LOG = LOG.child({src: true});
-                        break;
+    if (opts.help)
+        usage();
 
-                default:
-                        usage();
-                        break;
-                }
-        }
+    try {
+        var _f = opts.file || __dirname + '/etc/config.json';
+        cfg = JSON.parse(fs.readFileSync(_f, 'utf8'));
+    } catch (e) {
+        LOG.fatal(e, 'unable to parse %s', _f);
+        process.exit(1);
+    }
 
-        return (opts);
-}
+    assert.object(cfg.zookeeper, 'config.zookeeper');
 
+    if (cfg.logLevel)
+        LOG.level(cfg.logLevel);
 
-function readConfig(fname) {
-        var cfg;
-        var file;
+    if (opts.verbose) {
+        opts.verbose.forEach(function () {
+            LOG.level(Math.max(bunyan.TRACE, (LOG.level() - 10)));
+        });
+    }
 
-        try {
-                file = fs.readFileSync(fname, 'utf8');
-        } catch (e) {
-                LOG.fatal(e, 'unable to read %s', fname);
-                process.exit(1);
-        }
-        try {
-                cfg = JSON.parse(file);
-        } catch (e) {
-                LOG.fatal(e, 'invalid JSON in %s', fname);
-                process.exit(1);
-        }
+    if (LOG.level() <= bunyan.DEBUG)
+        LOG = LOG.child({src: true});
 
-        return (cfg);
+    cfg.log = LOG;
+    cfg.zookeeper.log = LOG;
+
+    return (cfg);
 }
 
 
 function usage(msg) {
-        if (msg)
-                console.error(msg);
+    if (msg)
+        console.error(msg);
 
-        var str = 'usage: ' + require('path').basename(process.argv[1]);
-        str += '[-v] [-f file]';
-        console.error(str);
-        process.exit(1);
+    var str = 'usage: ' + require('path').basename(process.argv[1]);
+    str += '[-v] [-f file]';
+    console.error(str);
+    process.exit(msg ? 1 : 0);
 }
 
 
 
 ///--- Internal Functions
 
-function onZooKeeperConnect() {
-        LOG.info({
-                zk: ZK.toString()
-        }, 'ZooKeeper client acquired');
+function startWatch(opts, cb) {
+    assert.object(opts, 'options');
+    assert.object(opts.config, 'options.config');
+    assert.object(opts.log, 'options.log');
+    assert.object(opts.zk, 'options.zk');
+    assert.func(cb, 'callback');
 
-        if (WATCH) {
-                WATCH.stop();
-                WATCH = null;
-        }
+    cb = once(cb);
 
-        WATCH = new core.createWatch({
-                domain: CFG.name,
-                log: LOG,
-                zk: ZK
+    function _start(_, _cb) {
+        _cb = once(_cb);
+
+        var cfg = opts.config;
+        var watch = new core.createWatch({
+            domain: cfg.name,
+            log: opts.log,
+            zk: opts.zk
         });
+        watch.start(function onStart(err) {
+            if (err) {
+                _cb(err);
+                return;
+            }
 
-        WATCH.start(function onStart(start_err) {
-                if (start_err) {
-                        LOG.fatal(start_err, 'unable to set watch');
-                        process.exit(1);
-                }
+            // ZooKeeper errors should redrive here.
+            watch.on('error', function (err) {
+                opts.log.error(err, 'watch failed; stopping watch.');
+                watch.stop();
+            });
 
-                WATCH.on('hosts', function onHosts(hosts) {
-                        var opts = {
-                                adminIp: CFG.adminIp,
-                                externalIp: CFG.externalIp,
-                                hosts: hosts || [],
-                                log: LOG,
-                                restart: CFG.restart
-                        };
-                        core.restartLB(opts, function (err) {
-                                if (err) {
-                                        LOG.error({
-                                                hosts: hosts,
-                                                err: err
-                                        }, 'lb restart failed');
-                                        return;
-                                }
+            watch.on('hosts', function onHosts(hosts) {
+                var _opts = {
+                    adminIp: cfg.adminIp,
+                    externalIp: cfg.externalIp,
+                    hosts: hosts || [],
+                    log: opts.log,
+                    restart: cfg.restart
+                };
+                core.restartLB(_opts, function (err) {
+                    if (err) {
+                        opts.log.error({
+                            hosts: hosts,
+                            err: err
+                        }, 'lb restart failed');
+                        return;
+                    }
 
-                                LOG.info({
-                                        hosts: hosts
-                                }, 'lb restarted');
-                        });
+                    opts.log.info({
+                        hosts: hosts
+                    }, 'lb restarted');
                 });
+            });
+
+            _cb(null, watch);
         });
+    }
+
+    function start() {
+        var retry = backoff.call(_start, {}, cb);
+        retry.failAfter(Infinity);
+        retry.setStrategy(new backoff.ExponentialStrategy());
+
+        retry.on('backoff', function (num, delay, err) {
+            opts.log.warn({
+                err: err,
+                num_attempts: num,
+                delay: delay
+            }, 'failed to start ZooKeeper watch');
+        });
+
+        retry.start();
+    }
+
+    start();
 }
 
 
 
 ///--- Mainline
 
-var ARGV = parseOptions();
-var CFG = readConfig(ARGV.file);
+(function main() {
+    var cfg = configure();
 
-CFG.log = LOG;
-CFG.zookeeper.log = LOG;
+    function zookeeper() {
+        function _zk(_, cb) {
+            cb = once(cb);
 
-ZK = zkplus.createClient(CFG.zookeeper);
+            var zk = zkplus.createClient(cfg.zookeeper);
 
-ZK.once('connect', onZooKeeperConnect);
+            zk.once('connect', function () {
+                zk.removeAllListeners('error');
+                LOG.info({
+                    zk: zk.toString()
+                }, 'ZooKeeper client acquired');
 
-ZK.connect();
+                cb(null, zk);
+            });
+
+            zk.once('error', function (err) {
+                zk.removeAllListeners('connect');
+                cb(err);
+            });
+
+            zk.connect();
+        }
+
+        var retry = backoff.call(_zk, {}, function (_, zk) {
+            startWatch({
+                config: cfg,
+                log: LOG,
+                zk: zk
+            }, function (_, watcher) {
+                zk.on('error', function onError(err) {
+                    LOG.error(err, 'ZooKeeper: error');
+                    if (watcher)
+                        watcher.stop();
+
+                    zk.close();
+
+                    zk.removeAllListeners('connect');
+                    zk.removeAllListeners('error');
+
+                    process.nextTick(zookeeper);
+                });
+            });
+        });
+        retry.failAfter(Infinity);
+        retry.setStrategy(new backoff.ExponentialStrategy());
+
+        retry.on('backoff', function (num, delay, err) {
+            LOG.warn({
+                err: err,
+                num_attempts: num,
+                delay: delay
+            }, 'failed to create ZooKeeper client');
+        });
+
+        retry.start();
+    }
+
+    zookeeper();
+})();

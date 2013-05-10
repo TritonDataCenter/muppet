@@ -1,19 +1,20 @@
 {
-        "name": "muppet",
-        "description": "Joyent's Load Balancer",
-        "version": "1.0.0",
-        "author": "Joyent (joyent.com)",
-        "private": true,
-        "dependencies": {
-                "assert-plus": "0.1.2",
-                "backoff": "1.2.0",
-                "bunyan": "0.18.2",
-                "node-uuid": "1.4.0",
-                "posix-getopt": "1.0.0",
-                "vasync": "1.3.3",
-                "zkplus": "0.3.0-smartos-only"
-        },
-        "scripts": {
-                "start": "node ./main.js"
-        }
+    "name": "muppet",
+    "description": "Joyent's Load Balancer",
+    "version": "1.0.0",
+    "author": "Joyent (joyent.com)",
+    "private": true,
+    "dependencies": {
+        "assert-plus": "0.1.2",
+        "backoff": "2.2.0",
+        "bunyan": "0.21.1",
+        "dashdash": "1.2.1",
+        "node-uuid": "1.4.0",
+        "once": "1.1.1",
+        "vasync": "1.3.3",
+        "zkplus": "0.3.2-smartos-only"
+    },
+    "scripts": {
+        "start": "node ./main.js"
+    }
 }
