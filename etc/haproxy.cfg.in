@@ -18,8 +18,9 @@ defaults
         no option http-server-close
         retries 3
         timeout connect 2000
-        timeout client  55000
-        timeout server  120000
+# See MANTA-1439
+#        timeout client  55000
+#        timeout server  120000
         errorfile 400 /opt/smartdc/muppet/etc/400.http
         errorfile 408 /opt/smartdc/muppet/etc/408.http
         errorfile 500 /opt/smartdc/muppet/etc/503.http
