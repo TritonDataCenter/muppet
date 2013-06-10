@@ -1,0 +1,5 @@
+{
+    "name": "stud",
+    "path": "/opt/local/etc/stud.conf",
+	"master": true
+}

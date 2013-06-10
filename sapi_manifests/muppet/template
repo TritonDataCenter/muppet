@@ -1,0 +1,17 @@
+{
+  "name": "manta.{{REGION}}.{{DNS_DOMAIN}}",
+  "adminIp": "{{ADMIN_IP}}",
+  "externalIp": "{{EXTERNAL_IP}}",
+  "zookeeper": {
+    "connectTimeout": 1000,
+    "servers": [
+      {{#ZK_SERVERS}}
+      {
+        "host": "{{host}}",
+        "port": {{port}}
+      }{{^last}}, {{/last}}
+      {{/ZK_SERVERS}}
+    ],
+    "timeout": 60000
+  }
+}
