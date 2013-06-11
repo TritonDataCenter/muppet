@@ -4,6 +4,7 @@ global
         group nobody
         daemon
         pidfile /var/run/haproxy.pid
+        stats socket /tmp/haproxy mode 0600 level admin
 
 defaults
         balance leastconn

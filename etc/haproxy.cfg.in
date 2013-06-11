@@ -5,6 +5,8 @@ global
         daemon
         pidfile /var/run/haproxy.pid
         log-send-hostname %s
+        stats socket /tmp/haproxy mode 0600 level admin
+
 
 defaults
         balance leastconn
