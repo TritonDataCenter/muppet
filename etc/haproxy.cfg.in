@@ -12,6 +12,7 @@ global
 defaults
         balance leastconn
         log     global
+        maxconn 65535
         mode http
         option forwardfor
         option httplog
