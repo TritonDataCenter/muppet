@@ -48,12 +48,12 @@ frontend https
 
 frontend http_external
         bind %s:80
-        default_backend secure_api
+        default_backend insecure_api
 
 
 frontend http_internal
         bind %s:80
-        default_backend insecure_api
+        default_backend secure_api
 
 
 frontend stats_http
