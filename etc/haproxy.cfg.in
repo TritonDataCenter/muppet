@@ -3,6 +3,7 @@ global
         user nobody
         group nobody
         daemon
+        maxconn 65535
         pidfile /var/run/haproxy.pid
         log-send-hostname %s
         stats socket /tmp/haproxy mode 0600 level admin
@@ -11,7 +12,6 @@ global
 defaults
         balance leastconn
         log     global
-        maxconn 65535
         mode http
         option forwardfor
         option httplog
