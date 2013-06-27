@@ -10,3 +10,6 @@
 [submodule "deps/hatop"]
 	path = deps/hatop
 	url = git://labs.feurix.org/feurix/admin/hatop.git
+[submodule "deps/manta-scripts"]
+	path = deps/manta-scripts
+	url = git@git.joyent.com:manta-scripts.git
