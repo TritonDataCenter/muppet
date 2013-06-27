@@ -63,7 +63,7 @@ TMPDIR			:= /tmp/$(STAMP)
 # Repo-specific targets
 #
 .PHONY: all
-all: $(SMF_MANIFESTS) | $(NODEUNIT) $(REPO_DEPS) $(HAPROXY_EXEC)
+all: $(SMF_MANIFESTS) | $(NODEUNIT) $(REPO_DEPS) $(HAPROXY_EXEC) scripts
 	$(NPM) install
 
 $(NODEUNIT): | $(NPM_EXEC)
