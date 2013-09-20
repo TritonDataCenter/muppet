@@ -79,6 +79,7 @@ manta_common_presetup
 # maximum number of incoming connections
 #
 echo "Setting TCP tunables"
+ipadm set-prop -t -p max_buf=2097152 tcp
 ndd -set /dev/tcp tcp_recv_hiwat 2097152
 ndd -set /dev/tcp tcp_xmit_hiwat 2097152
 
