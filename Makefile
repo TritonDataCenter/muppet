@@ -76,6 +76,11 @@ DISTCLEAN_FILES += ./node_modules muppet-pkg-*.tar.bz2
 test: $(NODEUNIT)
 	$(NODEUNIT) test/*.test.js 2>&1 | $(BUNYAN)
 
+.PHONY: scripts
+scripts: deps/manta-scripts/.git
+	mkdir -p $(BUILD)/scripts
+	cp deps/manta-scripts/*.sh $(BUILD)/scripts
+
 .PHONY: release
 release: all docs $(SMF_MANIFESTS)
 	@echo "Building $(RELEASE_TARBALL)"
