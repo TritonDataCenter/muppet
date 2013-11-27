@@ -57,7 +57,7 @@ PATH	:= $(NODE_INSTALL)/bin:${PATH}
 
 RELEASE_TARBALL		:= muppet-pkg-$(STAMP).tar.bz2
 ROOT			:= $(shell pwd)
-TMPDIR			:= /tmp/$(STAMP)
+RELSTAGEDIR			:= /tmp/$(STAMP)
 
 #
 # Repo-specific targets
@@ -84,16 +84,16 @@ scripts: deps/manta-scripts/.git
 .PHONY: release
 release: all docs $(SMF_MANIFESTS)
 	@echo "Building $(RELEASE_TARBALL)"
-	@mkdir -p $(TMPDIR)/site
-	@touch $(TMPDIR)/site/.do-not-delete-me
-	@mkdir -p $(TMPDIR)/root/opt/smartdc/boot
-	@mkdir -p $(TMPDIR)/root/opt/smartdc/$(MY_NAME)/etc
-	@mkdir -p $(TMPDIR)/root/opt/smartdc/$(MY_NAME)/smf/manifests
-	@cp $(ROOT)/etc/haproxy.cfg.default $(TMPDIR)/root/opt/smartdc/$(MY_NAME)/etc
-	@cp $(ROOT)/etc/haproxy.cfg.in $(TMPDIR)/root/opt/smartdc/$(MY_NAME)/etc
-	@cp $(ROOT)/etc/*.http $(TMPDIR)/root/opt/smartdc/$(MY_NAME)/etc
+	@mkdir -p $(RELSTAGEDIR)/site
+	@touch $(RELSTAGEDIR)/site/.do-not-delete-me
+	@mkdir -p $(RELSTAGEDIR)/root/opt/smartdc/boot
+	@mkdir -p $(RELSTAGEDIR)/root/opt/smartdc/$(MY_NAME)/etc
+	@mkdir -p $(RELSTAGEDIR)/root/opt/smartdc/$(MY_NAME)/smf/manifests
+	@cp $(ROOT)/etc/haproxy.cfg.default $(RELSTAGEDIR)/root/opt/smartdc/$(MY_NAME)/etc
+	@cp $(ROOT)/etc/haproxy.cfg.in $(RELSTAGEDIR)/root/opt/smartdc/$(MY_NAME)/etc
+	@cp $(ROOT)/etc/*.http $(RELSTAGEDIR)/root/opt/smartdc/$(MY_NAME)/etc
 	@cp $(ROOT)/smf/manifests/*.xml \
-		$(TMPDIR)/root/opt/smartdc/$(MY_NAME)/smf/manifests
+		$(RELSTAGEDIR)/root/opt/smartdc/$(MY_NAME)/smf/manifests
 	cp -r	$(ROOT)/build \
 		$(ROOT)/boot \
 		$(ROOT)/lib \
@@ -102,14 +102,14 @@ release: all docs $(SMF_MANIFESTS)
 		$(ROOT)/package.json \
 		$(ROOT)/sapi_manifests \
 		$(ROOT)/smf \
-		$(TMPDIR)/root/opt/smartdc/$(MY_NAME)
-	mv $(TMPDIR)/root/opt/smartdc/$(MY_NAME)/build/scripts \
-	    $(TMPDIR)/root/opt/smartdc/$(MY_NAME)/boot
+		$(RELSTAGEDIR)/root/opt/smartdc/$(MY_NAME)
+	mv $(RELSTAGEDIR)/root/opt/smartdc/$(MY_NAME)/build/scripts \
+	    $(RELSTAGEDIR)/root/opt/smartdc/$(MY_NAME)/boot
 	ln -s /opt/smartdc/$(MY_NAME)/boot/configure.sh \
-	    $(TMPDIR)/root/opt/smartdc/boot/configure.sh
-	chmod 755 $(TMPDIR)/root/opt/smartdc/$(MY_NAME)/boot/configure.sh
-	(cd $(TMPDIR) && $(TAR) -jcf $(ROOT)/$(RELEASE_TARBALL) root site)
-	@rm -rf $(TMPDIR)
+	    $(RELSTAGEDIR)/root/opt/smartdc/boot/configure.sh
+	chmod 755 $(RELSTAGEDIR)/root/opt/smartdc/$(MY_NAME)/boot/configure.sh
+	(cd $(RELSTAGEDIR) && $(TAR) -jcf $(ROOT)/$(RELEASE_TARBALL) root site)
+	@rm -rf $(RELSTAGEDIR)
 
 .PHONY: publish
 publish: release
