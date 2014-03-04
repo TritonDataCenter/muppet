@@ -19,8 +19,8 @@ defaults
         no option http-server-close
         retries 3
         timeout connect 500
-#        timeout client  30000
-#        timeout server  30000
+        timeout client  120000
+        timeout server  240000
 
 frontend https
         bind 127.0.0.1:8443 accept-proxy
