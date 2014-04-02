@@ -1,0 +1,5 @@
+{
+    "name": "muppet",
+    "path": "/opt/smartdc/muppet/etc/config.json",
+	"master": true
+}
