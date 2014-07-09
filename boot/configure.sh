@@ -73,7 +73,7 @@ function manta_setup_haproxy {
 function manta_setup_stud {
     manta_add_logadm_entry "stud"
 
-    svccfg import /opt/local/share/smf/stud/manifest.xml
+    svccfg import $SVC_ROOT/smf/manifests/stud.xml
     svcadm enable stud
     [[ $? -eq 0 ]] || fatal "Unable to start stud"
 }
