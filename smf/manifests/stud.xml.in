@@ -15,7 +15,6 @@
       <method_context>
         <method_environment>
           <envvar name="LD_PRELOAD" value="libumem.so.1" />
-          <envvar name="UMEM_DEBUG" value="default" />
         </method_environment>
       </method_context>
     </exec_method>
