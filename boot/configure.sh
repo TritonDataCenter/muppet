@@ -31,10 +31,17 @@ function find_sdc_resolver {
     local resolvers=$(cat /etc/resolv.conf | grep nameserver | \
         cut -d ' ' -f 2 | tr '\n' ' ')
     for resolver in $resolvers; do
-        local sapi_ip=$(dig @$resolver $sapi_hostname +short)
+        local sapi_ip;
+        sapi_ip=$(dig @$resolver $sapi_hostname +short)
+        if [[ $? != 0 ]]; then
+            echo "$resolver was unavailable to resolve $sapi_hostname"
+            continue
+        fi
         if [[ -n "$sapi_ip" ]]; then
             SDC_RESOLVER="$resolver"
             break
+        else
+            echo "$resolver did not resolve $sapi_hostname"
         fi
     done
     if [[ -z "$SDC_RESOLVER" ]]; then
