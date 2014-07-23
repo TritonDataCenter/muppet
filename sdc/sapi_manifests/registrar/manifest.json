@@ -1,0 +1,6 @@
+{
+    "name": "registrar",
+    "path": "/opt/smartdc/registrar/etc/config.json",
+    "post_cmd": "/usr/sbin/svcadm restart registrar",
+	"master": true
+}

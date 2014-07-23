@@ -1,0 +1,11 @@
+defaults
+        balance leastconn
+        log     global
+        maxconn 65535
+        mode tcp
+        option tcplog
+        option redispatch
+        retries 3
+        timeout client  0
+        timeout connect 2000
+        timeout server  0

@@ -9,6 +9,7 @@ global
         stats socket /tmp/haproxy mode 0600 level admin
 
 
+# http / https defaults
 defaults
         balance leastconn
         log     global
@@ -29,12 +30,13 @@ defaults
         errorfile 503 /opt/smartdc/muppet/etc/503.http
         errorfile 504 /opt/smartdc/muppet/etc/503.http
 
-backend secure_api
-        option httpchk GET /ping
+# External HTTPS service backend
 %s
 
-backend insecure_api
-        option httpchk GET /ping
+# External HTTP service backend
+%s
+
+# Internal HTTP service backends
 %s
 
 backend haproxy-stats_http
@@ -42,20 +44,24 @@ backend haproxy-stats_http
         stats refresh 30s
         stats uri /
 
-frontend https
-        bind 127.0.0.1:8443 accept-proxy
-        default_backend secure_api
+# External HTTPS service frontend
+%s
 
-frontend http_external
-        bind %s:80
-        default_backend insecure_api
+# External HTTP service frontend
+%s
 
-
-frontend http_internal
-        bind %s:80
-        default_backend secure_api
-
+# Internal HTTP service frontend
+%s
 
 frontend stats_http
          bind %s:8080
          default_backend haproxy-stats_http
+
+# TCP defaults
+%s
+
+# TCP backends
+%s
+
+# TCP frontends
+%s

@@ -7,6 +7,7 @@ var backoff = require('backoff');
 var bunyan = require('bunyan');
 var dashdash = require('dashdash');
 var once = require('once');
+var vasync = require('vasync');
 var zkplus = require('zkplus');
 
 var core = require('./lib');
@@ -114,12 +115,58 @@ function startWatch(opts, cb) {
 
     cb = once(cb);
 
-    function _start(_, _cb) {
+    var cfg = opts.config;
+    assert.arrayOfObject(cfg.services, 'cfg.services');
+    var hosts = cfg.services;
+
+    hosts.forEach(function (h) {
+        h.hosts = [];
+    });
+
+    opts.log.debug({ hosts: hosts }, 'hosts');
+
+    if (hosts.length === 0) {
+        opts.log.info('No hosts to watch');
+        cb();
+        return;
+    }
+
+    function onHosts(change) {
+        for (var h in hosts) {
+            if (hosts[h].domain == change.domain) {
+                hosts[h].hosts = change.hosts || [];
+                break;
+            }
+        }
+
+        var _opts = {
+            adminIp: cfg.adminIp,
+            changed: change.domain,
+            externalIp: cfg.externalIp,
+            hosts: hosts,
+            log: opts.log,
+            restart: cfg.restart
+        };
+        core.restartLB(_opts, function (err) {
+            if (err) {
+                opts.log.error({
+                    hosts: hosts,
+                    err: err
+                }, 'lb restart failed');
+                return;
+            }
+
+            opts.log.info({
+                hosts: hosts
+            }, 'lb restarted');
+        });
+    }
+
+    function _start(host, _cb) {
         _cb = once(_cb);
 
-        var cfg = opts.config;
         var watch = new core.createWatch({
-            domain: cfg.name,
+            domain: host.domain,
             log: opts.log,
             zk: opts.zk
         });
@@ -130,40 +177,20 @@ function startWatch(opts, cb) {
             }
 
             // ZooKeeper errors should redrive here.
-            watch.on('error', function (err) {
-                opts.log.error(err, 'watch failed; stopping watch.');
+            watch.on('error', function (err2) {
+                opts.log.error({ err: err2, domain: watch.domainName },
+                    'watch failed; stopping watch.');
                 watch.stop();
             });
 
-            watch.on('hosts', function onHosts(hosts) {
-                var _opts = {
-                    adminIp: cfg.adminIp,
-                    externalIp: cfg.externalIp,
-                    hosts: hosts || [],
-                    log: opts.log,
-                    restart: cfg.restart
-                };
-                core.restartLB(_opts, function (err) {
-                    if (err) {
-                        opts.log.error({
-                            hosts: hosts,
-                            err: err
-                        }, 'lb restart failed');
-                        return;
-                    }
-
-                    opts.log.info({
-                        hosts: hosts
-                    }, 'lb restarted');
-                });
-            });
+            watch.on('hosts', onHosts);
 
             _cb(null, watch);
         });
     }
 
-    function start() {
-        var retry = backoff.call(_start, {}, cb);
+    function start(host, _cb) {
+        var retry = backoff.call(_start, host, _cb);
         retry.failAfter(Infinity);
         retry.setStrategy(new backoff.ExponentialStrategy());
 
@@ -175,10 +202,16 @@ function startWatch(opts, cb) {
             }, 'failed to start ZooKeeper watch');
         });
 
+        opts.log.debug({ host: host }, 'starting watch');
         retry.start();
     }
 
-    start();
+    var pOpts = {
+        func: start,
+        inputs: hosts
+    };
+
+    vasync.forEachParallel(pOpts, cb);
 }
 
 
@@ -216,11 +249,14 @@ function startWatch(opts, cb) {
                 config: cfg,
                 log: LOG,
                 zk: zk
-            }, function (_, watcher) {
+            }, function (__, watchers) {
                 zk.on('error', function onError(err) {
                     LOG.error(err, 'ZooKeeper: error');
-                    if (watcher)
-                        watcher.stop();
+                    if (watchers) {
+                        watchers.forEach(function (w) {
+                            w.stop();
+                        });
+                    }
 
                     zk.close();
 

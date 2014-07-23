@@ -1,5 +1,13 @@
 {
-  "name": "manta.{{REGION}}.{{DNS_DOMAIN}}",
+  "services": [
+    {
+      "domain": "manta.{{REGION}}.{{DNS_DOMAIN}}",
+      "external": true,
+      "http": true,
+      "https": true,
+      "internalHttp": true
+    }
+  ],
   "adminIp": "{{MANTA_IP}}",
   "externalIp": "{{EXTERNAL_IP}}",
   "zookeeper": {

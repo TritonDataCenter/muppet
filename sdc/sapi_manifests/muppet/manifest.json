@@ -1,0 +1,6 @@
+{
+    "name": "muppet",
+    "path": "/opt/smartdc/muppet/etc/config.json",
+    "post_cmd": "/usr/sbin/svcadm restart muppet",
+    "master": true
+}

@@ -1,0 +1,30 @@
+{
+  "services": [
+    {{#LB_SERVICES}}
+    {
+      "domain": "{{domain}}",
+      "external": {{#external}}{{external}}{{/external}}{{^external}}false{{/external}},
+      "http": {{#http}}{{http}}{{/http}}{{^http}}false{{/http}},
+      "https": {{#https}}{{https}}{{/https}}{{^https}}false{{/https}},
+      "internalHttp": {{#internalHttp}}{{internalHttp}}{{/internalHttp}}{{^internalHttp}}false{{/internalHttp}},
+      "tcpPorts": [ {{tcpPorts}} ]
+    }{{^last}}, {{/last}}
+    {{/LB_SERVICES}}
+  ],
+  "adminIp": "{{ADMIN_IP}}",
+  {{^PRIMARY_IP}}
+  "externalIp": "{{PRIMARY_IP}}",
+  {{/PRIMARY_IP}}
+  "zookeeper": {
+    "connectTimeout": 1000,
+    "servers": [
+      {{#ZK_SERVERS}}
+      {
+        "host": "{{host}}",
+        "port": {{port}}
+      }{{^last}}, {{/last}}
+      {{/ZK_SERVERS}}
+    ],
+    "timeout": 60000
+  }
+}
