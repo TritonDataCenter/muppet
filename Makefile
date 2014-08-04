@@ -109,6 +109,9 @@ release: all docs $(SMF_MANIFESTS)
 	ln -s /opt/smartdc/$(MY_NAME)/boot/setup.sh \
 	    $(RELSTAGEDIR)/root/opt/smartdc/boot/setup.sh
 	chmod 755 $(RELSTAGEDIR)/root/opt/smartdc/$(MY_NAME)/boot/setup.sh
+	ln -s /opt/smartdc/$(MY_NAME)/boot/configure.sh \
+	    $(RELSTAGEDIR)/root/opt/smartdc/boot/configure.sh
+	chmod 755 $(RELSTAGEDIR)/root/opt/smartdc/$(MY_NAME)/boot/configure.sh
 	(cd $(RELSTAGEDIR) && $(TAR) -jcf $(ROOT)/$(RELEASE_TARBALL) root site)
 	@rm -rf $(RELSTAGEDIR)
 

@@ -108,15 +108,6 @@ mv /tmp/resolv.conf /etc/resolv.conf
 echo "Running common setup scripts"
 manta_common_presetup
 
-#
-# Before we get going, jack our receive and transmit windows as well as our
-# maximum number of incoming connections
-#
-echo "Setting TCP tunables"
-ipadm set-prop -t -p max_buf=2097152 tcp
-ndd -set /dev/tcp tcp_recv_hiwat 2097152
-ndd -set /dev/tcp tcp_xmit_hiwat 2097152
-
 echo "Adding local manifest directories"
 manta_add_manifest_dir "/opt/smartdc/muppet"
 
