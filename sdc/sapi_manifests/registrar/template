@@ -1,4 +1,6 @@
 {
+  "adminIp": "{{ADMIN_IP}}",
+
   "registration": {
     "domain": "{{{SERVICE_DOMAIN}}}",
     "lbServices": [
