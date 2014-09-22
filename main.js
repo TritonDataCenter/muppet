@@ -131,9 +131,9 @@ function startWatch(opts, cb) {
             log: opts.log,
             zk: opts.zk
         });
-        watch.start(function onStart(err) {
-            if (err) {
-                _cb(err);
+        watch.start(function onStart(startErr) {
+            if (startErr) {
+                _cb(startErr);
                 return;
             }
 
@@ -224,7 +224,7 @@ function startWatch(opts, cb) {
                 config: cfg,
                 log: LOG,
                 zk: zk
-            }, function (_, watcher) {
+            }, function (_dummy2, watcher) {
                 zk.on('error', function onError(err) {
                     LOG.error(err, 'ZooKeeper: error');
                     if (watcher)
