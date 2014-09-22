@@ -1,6 +1,6 @@
 ---
 title: Muppet: Manta loadbalancer
-markdown2extras: wiki-tables, code-friendly
+markdown2extras: tables, code-friendly
 apisections:
 ---
 <!--
