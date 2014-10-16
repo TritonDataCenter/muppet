@@ -100,6 +100,7 @@ release: all docs $(SMF_MANIFESTS)
 	@mkdir -p $(RELSTAGEDIR)/root/opt/smartdc/$(MY_NAME)/smf/manifests
 	@cp $(ROOT)/etc/haproxy.cfg.default $(RELSTAGEDIR)/root/opt/smartdc/$(MY_NAME)/etc
 	@cp $(ROOT)/etc/haproxy.cfg.in $(RELSTAGEDIR)/root/opt/smartdc/$(MY_NAME)/etc
+	@cp $(ROOT)/etc/stud.conf $(RELSTAGEDIR)/root/opt/smartdc/$(MY_NAME)/etc
 	@cp $(ROOT)/etc/*.http $(RELSTAGEDIR)/root/opt/smartdc/$(MY_NAME)/etc
 	@cp $(ROOT)/smf/manifests/*.xml \
 		$(RELSTAGEDIR)/root/opt/smartdc/$(MY_NAME)/smf/manifests
