@@ -39,15 +39,15 @@ JSL_CONF_NODE	 = tools/jsl.node.conf
 JSL_FILES_NODE	 = $(JS_FILES)
 JSSTYLE_FILES	 = $(JS_FILES)
 JSSTYLE_FLAGS	 = -f tools/jsstyle.conf
-SMF_MANIFESTS_IN = smf/manifests/$(MY_NAME).xml.in smf/manifests/haproxy.xml.in smf/manifests/stud.xml.in
+SMF_MANIFESTS_IN = smf/manifests/$(MY_NAME).xml.in smf/manifests/haproxy.xml.in
 
 #
 # Variables
 #
 
 NODE_PREBUILT_TAG	= zone
-NODE_PREBUILT_VERSION	:= v0.10.25
-NODE_PREBUILT_IMAGE	= fd2cc906-8938-11e3-beab-4359c665ac99
+NODE_PREBUILT_VERSION	:= v0.10.32
+NODE_PREBUILT_IMAGE	= de411e86-548d-11e4-a4b7-3bb60478632a
 
 include ./tools/mk/Makefile.defs
 include ./tools/mk/Makefile.haproxy.defs
