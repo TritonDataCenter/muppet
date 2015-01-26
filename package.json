@@ -1,7 +1,7 @@
 {
     "name": "muppet",
     "description": "Joyent's Load Balancer",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "author": "Joyent (joyent.com)",
     "private": true,
     "dependencies": {
@@ -16,6 +16,9 @@
     },
     "scripts": {
         "start": "node ./main.js"
+    },
+    "sdcDependencies": {
+        "config-agent": ">=1.2.0"
     },
     "license": "MPL-2.0"
 }
