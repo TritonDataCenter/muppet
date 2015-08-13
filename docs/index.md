@@ -166,7 +166,7 @@ Run this command:
 
     $ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
         -keyout /opt/local/etc/server.pem -out /opt/local/etc/server.pem \
-        -subj "/C=US/ST=CA/O=Joyent/OU=manta/CN=localhost
+        -subj "/C=US/ST=CA/O=Joyent/OU=manta/CN=localhost"
 
 ## Load Balancer
 
