@@ -45,10 +45,12 @@ backend haproxy-stats_http
 frontend https
         bind 127.0.0.1:8443 accept-proxy
         default_backend secure_api
+        http-response set-header Strict-Transport-Security max-age=15768000;\ includeSubDomains;\ preload;
 
 frontend http_external
         bind %s:80
         default_backend insecure_api
+        http-response set-header Strict-Transport-Security max-age=15768000;\ includeSubDomains;\ preload;
 
 
 frontend http_internal
