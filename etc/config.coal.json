@@ -1,7 +1,7 @@
 {
         "name": "manta.coal.joyent.us",
-        "adminIp": "127.0.0.1",
-        "externalIp": "::1",
+        "trustedIP": "127.0.0.1",
+        "untrustedIPs": [ "::1" ],
         "zookeeper": {
                 "servers": [ {
                         "host": "10.99.99.11",

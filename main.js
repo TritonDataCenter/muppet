@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2014, Joyent, Inc.
+ * Copyright (c) 2017, Joyent, Inc.
  */
 
 var fs = require('fs');
@@ -14,7 +14,10 @@ var assert = require('assert-plus');
 var backoff = require('backoff');
 var bunyan = require('bunyan');
 var dashdash = require('dashdash');
+var forkexec = require('forkexec');
+var net = require('net');
 var once = require('once');
+var VError = require('verror');
 var zkplus = require('zkplus');
 
 var core = require('./lib');
@@ -50,6 +53,59 @@ var OPTIONS = [
     }
 ];
 
+///--- Helper functions
+
+function getUntrustedIPs(cfg, callback) {
+    // Allow hardcoding addresses in the configuration.
+    if (cfg.hasOwnProperty('untrustedIPs')) {
+        callback();
+        return;
+    }
+
+    cfg.untrustedIPs = [];
+
+    var args = [ '/usr/sbin/mdata-get', 'sdc:nics' ];
+    LOG.info({ cmd: args }, 'Loading NIC information');
+    forkexec.forkExecWait({
+        argv: args
+    }, function (err, info) {
+        if (err) {
+            LOG.error(info, 'Failed to load NIC information');
+            setImmediate(callback,
+                new VError(err, 'Fetching untrusted IPs failed'));
+            return;
+        }
+
+        var nics = JSON.parse(info.stdout);
+        assert.array(nics, 'nics');
+
+        LOG.info({ nics: nics }, 'Looked up NICs');
+
+        nics.forEach(function (nic) {
+            // Skip NICs on trusted networks.
+            if (nic.nic_tag === 'admin' || nic.nic_tag === 'manta') {
+                return;
+            }
+
+            if (nic.hasOwnProperty('ips')) {
+                nic.ips.forEach(function (addr) {
+                    var ip = addr.split('/')[0];
+                    if (net.isIPv4(ip) || net.isIPv6(ip)) {
+                        cfg.untrustedIPs.push(ip);
+                    }
+                });
+            } else if (nic.hasOwnProperty('ip')) {
+                if (net.isIPv4(nic.ip)) {
+                    cfg.untrustedIPs.push(nic.ip);
+                }
+            } else {
+                LOG.warn({ nic: nic }, 'NIC has no IP addresses');
+            }
+        });
+
+        callback();
+    });
+}
 
 
 ///--- CLI Functions
@@ -78,7 +134,11 @@ function configure() {
         process.exit(1);
     }
 
+    assert.string(cfg.name, 'config.name');
+    assert.string(cfg.trustedIP, 'config.trustedIP');
     assert.object(cfg.zookeeper, 'config.zookeeper');
+    assert.optionalArrayOfString(cfg.untrustedIPs,
+        'config.untrustedIPs');
 
     if (cfg.logLevel)
         LOG.level(cfg.logLevel);
@@ -145,8 +205,8 @@ function startWatch(opts, cb) {
 
             watch.on('hosts', function onHosts(hosts) {
                 var _opts = {
-                    adminIp: cfg.adminIp,
-                    externalIp: cfg.externalIp,
+                    trustedIP: cfg.trustedIP,
+                    untrustedIPs: cfg.untrustedIPs,
                     hosts: hosts || [],
                     log: opts.log,
                     restart: cfg.restart
@@ -253,5 +313,18 @@ function startWatch(opts, cb) {
         retry.start();
     }
 
-    zookeeper();
+    getUntrustedIPs(cfg, function (err) {
+        if (err) {
+            // We failed to load our IPs: abort.
+            LOG.fatal(err, 'Failed to look up any IPs');
+            process.exit(1);
+        }
+
+        LOG.info({
+            trustedIP: cfg.trustedIP,
+            untrustedIPs: cfg.untrustedIPs
+        }, 'Selected IPs for untrusted networks');
+
+        zookeeper();
+    });
 })();
