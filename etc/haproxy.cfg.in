@@ -46,8 +46,6 @@ frontend https
         bind 127.0.0.1:8443 accept-proxy
         default_backend secure_api
 
-frontend http_external
-        default_backend insecure_api
 %s
 
 frontend http_internal

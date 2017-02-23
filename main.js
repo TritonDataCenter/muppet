@@ -318,11 +318,6 @@ function startWatch(opts, cb) {
             process.exit(1);
         }
 
-        if (cfg.untrustedIPs.length === 0) {
-            LOG.fatal('Failed to find any untrusted IPs to listen on');
-            process.exit(1);
-        }
-
         LOG.info({
             trustedIP: cfg.trustedIP,
             untrustedIPs: cfg.untrustedIPs
