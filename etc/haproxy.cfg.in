@@ -26,6 +26,7 @@ defaults
         errorfile 400 /opt/smartdc/muppet/etc/400.http
         errorfile 408 /opt/smartdc/muppet/etc/408.http
         errorfile 500 /opt/smartdc/muppet/etc/503.http
+        errorfile 502 /opt/smartdc/muppet/etc/503.http
         errorfile 503 /opt/smartdc/muppet/etc/503.http
         errorfile 504 /opt/smartdc/muppet/etc/503.http
 
