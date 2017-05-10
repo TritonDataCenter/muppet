@@ -6,11 +6,12 @@
 #
 
 #
-# Copyright (c) 2014, Joyent, Inc.
+# Copyright (c) 2017, Joyent, Inc.
 #
 
 #
-# Makefile.haproxy.defs: Makefile for building and bundling your own haproxy
+# Makefile.haproxy.defs: building and shipping a private haproxy
+#
 
 TOP ?= $(error You must include Makefile.defs before this makefile)
 
@@ -19,6 +20,7 @@ HAPROXY_INSTALL ?= $(BUILD)/haproxy
 DISTCLEAN_FILES	+= $(HAPROXY_INSTALL)
 
 HAPROXY_EXEC	= $(HAPROXY_INSTALL)/sbin/haproxy
+HAPROXY_SRC	:= deps/haproxy-1.5
 
 # Ensure these use absolute paths to the executables to allow running
 # from a dir other than the project top.

@@ -6,24 +6,19 @@
 #
 
 #
-# Copyright (c) 2014, Joyent, Inc.
+# Copyright (c) 2017, Joyent, Inc.
 #
 
 #
-# Makefile.nginx.targ: See Makefile.nginx.defs.
-#
-# NOTE: This makefile comes from the "eng" repo. It's designed to be dropped
-# into other repos as-is without requiring any modifications. If you find
-# yourself changing this file, you should instead update the original copy in
-# eng.git and then update your repo to use the new version.
+# Makefile.haproxy.targ: building and shipping a private haproxy
 #
 
-$(HAPROXY_EXEC):
-	cd $(TOP)/deps/haproxy-1.4.21; \
-	$(MAKE) TARGET=solaris && \
-	$(MAKE) install PREFIX=$(TOP)/$(HAPROXY_INSTALL)
+$(HAPROXY_EXEC): $(HAPROXY_SRC)/.git
+	cd $(HAPROXY_SRC) && \
+	    $(MAKE) -j8 TARGET=solaris && \
+	    $(MAKE) install PREFIX=$(TOP)/$(HAPROXY_INSTALL)
 
 DISTCLEAN_FILES += $(HAPROXY_INSTALL)
 
 distclean::
-	-(cd deps/haproxy-1.4.21 && $(MAKE) clean)
+	-cd $(HAPROXY_SRC) && $(MAKE) clean

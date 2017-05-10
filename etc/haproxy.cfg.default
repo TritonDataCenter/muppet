@@ -13,6 +13,7 @@ defaults
         maxconn 65535
 	mode http
         option forwardfor
+        option http-tunnel
 	option httplog
         option redispatch
         no option httpclose
