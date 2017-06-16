@@ -64,7 +64,11 @@ test('create watch', function (t) {
         t.ok(WATCH);
         WATCH.start(function (err) {
                 t.ifError(err);
-                t.end();
+                WATCH.once('hosts', function (hosts) {
+                        t.ok(hosts);
+                        t.equal(hosts.length, 0);
+                        t.end();
+                });
         });
 });
 

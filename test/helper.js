@@ -51,6 +51,7 @@ function createZkClient(callback) {
                 zk.removeAllListeners('error');
                 callback(null, zk);
         });
+        zk.connect();
 }
 
 
