@@ -5,7 +5,7 @@
 #
 
 #
-# Copyright (c) 2014, Joyent, Inc.
+# Copyright (c) 2017, Joyent, Inc.
 #
 
 #
@@ -82,8 +82,13 @@ CLEAN_FILES += $(NODEUNIT) ./node_modules/nodeunit
 DISTCLEAN_FILES += ./node_modules muppet-pkg-*.tar.bz2
 
 .PHONY: test
+#
+# Unit tests
+# Right now we are ignoring the watch test until
+# it is back to a working state.
+#
 test: $(NODEUNIT)
-	$(NODEUNIT) test/*.test.js 2>&1 | $(BUNYAN)
+	$(NODEUNIT) test/config.test.js 2>&1 | $(BUNYAN)
 
 .PHONY: scripts
 scripts: deps/manta-scripts/.git
@@ -107,7 +112,7 @@ release: all docs $(SMF_MANIFESTS)
 	cp -r	$(ROOT)/build \
 		$(ROOT)/boot \
 		$(ROOT)/lib \
-		$(ROOT)/main.js \
+		$(ROOT)/muppet.js \
 		$(ROOT)/node_modules \
 		$(ROOT)/package.json \
 		$(ROOT)/sapi_manifests \

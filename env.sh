@@ -5,9 +5,9 @@
 #
 
 #
-# Copyright (c) 2014, Joyent, Inc.
+# Copyright (c) 2017, Joyent, Inc.
 #
 
 export PATH=$PWD/build/node/bin:$PWD/node_modules/.bin:$PATH
 
-alias muppet='sudo node main.js -f ./etc/config.coal.json -v 2>&1 | bunyan'
+alias muppet='sudo node muppet.js -f ./etc/config.coal.json -v 2>&1 | bunyan'

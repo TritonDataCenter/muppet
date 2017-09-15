@@ -1,0 +1,39 @@
+global
+        log 127.0.0.1 local0
+        user nobody
+        group nobody
+        daemon
+        maxconn 65535
+        pidfile /var/run/haproxy.pid
+        stats socket /tmp/haproxy mode 0600 level admin
+
+defaults
+        balance leastconn
+        log     global
+        maxconn 65535
+	mode http
+        option forwardfor
+        option http-tunnel
+	option httplog
+        option redispatch
+        no option httpclose
+        no option http-server-close
+        retries 3
+        timeout connect 500
+        timeout client  120000
+        timeout server  240000
+
+frontend https
+        bind 127.0.0.1:8443 accept-proxy
+        default_backend secure_api
+        reqadd x-secure:\ true
+
+backend secure_api
+	option httpchk GET /ping
+
+frontend http
+        bind *:80
+        default_backend insecure_api
+
+backend insecure_api
+	option httpchk GET /ping

@@ -208,7 +208,7 @@ function startWatch(opts, cb) {
                     trustedIP: cfg.trustedIP,
                     untrustedIPs: cfg.untrustedIPs,
                     hosts: hosts || [],
-                    log: opts.log,
+                    log: opts.log.child({component: 'lb_manager'}),
                     restart: cfg.restart
                 };
                 core.restartLB(_opts, function (err) {
