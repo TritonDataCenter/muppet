@@ -15,7 +15,7 @@
         "once": "1.3.0",
         "vasync": "2.0.0",
         "verror": "1.9.0",
-        "zkplus": "0.3.2-smartos-only"
+        "zkplus": "git+https://github.com/jaredmorrow/node-zkplus.git#018e02da97d25ba6bb6c9b24e8d4b83e20bef437"
     },
     "devDependencies": {
         "nodeunit": "0.7.4"
