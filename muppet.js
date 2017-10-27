@@ -9,7 +9,6 @@
  */
 
 var fs = require('fs');
-
 var assert = require('assert-plus');
 var backoff = require('backoff');
 var bunyan = require('bunyan');
@@ -18,11 +17,8 @@ var forkexec = require('forkexec');
 var net = require('net');
 var once = require('once');
 var VError = require('verror');
-var zkplus = require('zkplus');
-
+var zkstream = require('zkstream');
 var core = require('./lib');
-
-
 
 ///--- Globals
 
@@ -34,24 +30,7 @@ var LOG = bunyan.createLogger({
         err: bunyan.stdSerializers.err
     }
 });
-var OPTIONS = [
-    {
-        names: ['help', 'h'],
-        type: 'bool',
-        help: 'Print this help and exit.'
-    },
-    {
-        names: ['verbose', 'v'],
-        type: 'arrayOfBool',
-        help: 'Verbose output. Use multiple times for more verbose.'
-    },
-    {
-        names: ['file', 'f'],
-        type: 'string',
-        help: 'File to process',
-        helpArg: 'FILE'
-    }
-];
+
 
 ///--- Helper functions
 
@@ -64,7 +43,7 @@ function getUntrustedIPs(cfg, callback) {
 
     cfg.untrustedIPs = [];
 
-    var args = [ '/usr/sbin/mdata-get', 'sdc:nics' ];
+    const args = [ '/usr/sbin/mdata-get', 'sdc:nics' ];
     LOG.info({ cmd: args }, 'Loading NIC information');
     forkexec.forkExecWait({
         argv: args
@@ -76,7 +55,7 @@ function getUntrustedIPs(cfg, callback) {
             return;
         }
 
-        var nics = JSON.parse(info.stdout);
+        const nics = JSON.parse(info.stdout);
         assert.array(nics, 'nics');
 
         LOG.info({ nics: nics }, 'Looked up NICs');
@@ -89,7 +68,7 @@ function getUntrustedIPs(cfg, callback) {
 
             if (nic.hasOwnProperty('ips')) {
                 nic.ips.forEach(function (addr) {
-                    var ip = addr.split('/')[0];
+                    const ip = addr.split('/')[0];
                     if (net.isIPv4(ip) || net.isIPv6(ip)) {
                         cfg.untrustedIPs.push(ip);
                     }
@@ -113,7 +92,25 @@ function getUntrustedIPs(cfg, callback) {
 function configure() {
     var cfg;
     var opts;
-    var parser = new dashdash.Parser({options: OPTIONS});
+    const cli_options = [
+        {
+            names: ['help', 'h'],
+            type: 'bool',
+            help: 'Print this help and exit.'
+        },
+        {
+            names: ['verbose', 'v'],
+            type: 'arrayOfBool',
+            help: 'Verbose output. Use multiple times for more verbose.'
+        },
+        {
+            names: ['file', 'f'],
+            type: 'string',
+            help: 'File to process',
+            helpArg: 'FILE'
+        }
+    ];
+    var parser = new dashdash.Parser({options: cli_options});
 
     try {
         opts = parser.parse(process.argv);
@@ -127,7 +124,7 @@ function configure() {
         usage();
 
     try {
-        var _f = opts.file || __dirname + '/etc/config.json';
+        const _f = opts.file || __dirname + '/etc/config.json';
         cfg = JSON.parse(fs.readFileSync(_f, 'utf8'));
     } catch (e) {
         LOG.fatal(e, 'unable to parse %s', _f);
@@ -185,8 +182,8 @@ function startWatch(opts, cb) {
     function _start(_, _cb) {
         _cb = once(_cb);
 
-        var cfg = opts.config;
-        var watch = new core.createWatch({
+        const cfg = opts.config;
+        const watch = new core.createWatch({
             domain: cfg.name,
             log: opts.log,
             zk: opts.zk
@@ -231,7 +228,7 @@ function startWatch(opts, cb) {
     }
 
     function start() {
-        var retry = backoff.call(_start, {}, cb);
+        const retry = backoff.call(_start, {}, cb);
         retry.failAfter(Infinity);
         retry.setStrategy(new backoff.ExponentialStrategy());
 
@@ -249,69 +246,83 @@ function startWatch(opts, cb) {
     start();
 }
 
+function zookeeper(cfg) {
+    assert.object(cfg, 'cfg');
+    assert.object(cfg.zookeeper, 'cfg.zookeeper');
+    assert.object(cfg.zookeeper.log, 'cfg.zookeeper.log');
+    assert.arrayOfObject(cfg.zookeeper.servers, 'cfg.zookeeper.servers');
+    assert.number(cfg.zookeeper.timeout, 'cfg.zookeeper.number');
+    // sapi manifest config looks like
+    // "servers": [ {
+    //     "host": "10.99.99.11",
+    //     "port": 2181
+    // } ],
+    // "timeout": 60000
+    function _zk(_, cb) {
+        cb = once(cb);
+        const shost = cfg.zookeeper.servers[0].host;
+        const sport = cfg.zookeeper.servers[0].port;
 
+        var zk = zkstream.Client({
+            address: shost,
+            port: sport
+        });
+
+        zk.once('connect', function () {
+            zk.removeAllListeners('error');
+            LOG.info({
+                zk: zk.toString()
+            }, 'ZooKeeper client acquired');
+
+            cb(null, zk);
+        });
+
+        zk.once('error', function (err) {
+            zk.removeAllListeners('connect');
+            cb(err);
+        });
+
+        zk.connect();
+    }
+
+    var retry = backoff.call(_zk, {}, function (_, zk) {
+        startWatch({
+            config: cfg,
+            log: LOG,
+            zk: zk
+        }, function (_dummy2, watcher) {
+            zk.on('error', function onError(err) {
+                LOG.error(err, 'ZooKeeper: error');
+                if (watcher)
+                    watcher.stop();
+
+                zk.close();
+
+                zk.removeAllListeners('connect');
+                zk.removeAllListeners('error');
+
+                process.nextTick(zookeeper);
+            });
+        });
+    });
+    retry.failAfter(Infinity);
+    retry.setStrategy(new backoff.ExponentialStrategy());
+
+    retry.on('backoff', function (num, delay, err) {
+        LOG.warn({
+            err: err,
+            num_attempts: num,
+            delay: delay
+        }, 'failed to create ZooKeeper client');
+    });
+
+    retry.start();
+}
 
 ///--- Mainline
 
 (function main() {
-    var cfg = configure();
-
-    function zookeeper() {
-        function _zk(_, cb) {
-            cb = once(cb);
-
-            var zk = zkplus.createClient(cfg.zookeeper);
-
-            zk.once('connect', function () {
-                zk.removeAllListeners('error');
-                LOG.info({
-                    zk: zk.toString()
-                }, 'ZooKeeper client acquired');
-
-                cb(null, zk);
-            });
-
-            zk.once('error', function (err) {
-                zk.removeAllListeners('connect');
-                cb(err);
-            });
-
-            zk.connect();
-        }
-
-        var retry = backoff.call(_zk, {}, function (_, zk) {
-            startWatch({
-                config: cfg,
-                log: LOG,
-                zk: zk
-            }, function (_dummy2, watcher) {
-                zk.on('error', function onError(err) {
-                    LOG.error(err, 'ZooKeeper: error');
-                    if (watcher)
-                        watcher.stop();
-
-                    zk.close();
-
-                    zk.removeAllListeners('connect');
-                    zk.removeAllListeners('error');
-
-                    process.nextTick(zookeeper);
-                });
-            });
-        });
-        retry.failAfter(Infinity);
-        retry.setStrategy(new backoff.ExponentialStrategy());
-
-        retry.on('backoff', function (num, delay, err) {
-            LOG.warn({
-                err: err,
-                num_attempts: num,
-                delay: delay
-            }, 'failed to create ZooKeeper client');
-        });
-
-        retry.start();
-    }
+    const cfg = configure();
 
     getUntrustedIPs(cfg, function (err) {
         if (err) {
@@ -325,6 +336,6 @@ function startWatch(opts, cb) {
             untrustedIPs: cfg.untrustedIPs
         }, 'Selected IPs for untrusted networks');
 
-        zookeeper();
+        zookeeper(cfg);
     });
 })();

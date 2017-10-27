@@ -2,7 +2,6 @@
   "name": "manta.{{REGION}}.{{DNS_DOMAIN}}",
   "trustedIP": "{{auto.MANTA_IP}}",
   "zookeeper": {
-    "connectTimeout": 1000,
     "servers": [
       {{#ZK_SERVERS}}
       {
