@@ -20,17 +20,6 @@ var VError = require('verror');
 var zkstream = require('zkstream');
 var core = require('./lib');
 
-///--- Globals
-
-var LOG = bunyan.createLogger({
-    level: (process.env.LOG_LEVEL || 'info'),
-    name: 'muppet',
-    stream: process.stdout,
-    serializers: {
-        err: bunyan.stdSerializers.err
-    }
-});
-
 
 ///--- Helper functions
 
@@ -44,12 +33,12 @@ function getUntrustedIPs(cfg, callback) {
     cfg.untrustedIPs = [];
 
     const args = [ '/usr/sbin/mdata-get', 'sdc:nics' ];
-    LOG.info({ cmd: args }, 'Loading NIC information');
+    cfg.log.info({ cmd: args }, 'Loading NIC information');
     forkexec.forkExecWait({
         argv: args
     }, function (err, info) {
         if (err) {
-            LOG.error(info, 'Failed to load NIC information');
+            cfg.log.error(info, 'Failed to load NIC information');
             setImmediate(callback,
                 new VError(err, 'Fetching untrusted IPs failed'));
             return;
@@ -58,7 +47,7 @@ function getUntrustedIPs(cfg, callback) {
         const nics = JSON.parse(info.stdout);
         assert.array(nics, 'nics');
 
-        LOG.info({ nics: nics }, 'Looked up NICs');
+        cfg.log.info({ nics: nics }, 'Looked up NICs');
 
         nics.forEach(function (nic) {
             // Skip NICs on trusted networks.
@@ -78,7 +67,7 @@ function getUntrustedIPs(cfg, callback) {
                     cfg.untrustedIPs.push(nic.ip);
                 }
             } else {
-                LOG.warn({ nic: nic }, 'NIC has no IP addresses');
+                cfg.log.warn({ nic: nic }, 'NIC has no IP addresses');
             }
         });
 
@@ -90,8 +79,6 @@ function getUntrustedIPs(cfg, callback) {
 ///--- CLI Functions
 
 function configure() {
-    var cfg;
-    var opts;
     const cli_options = [
         {
             names: ['help', 'h'],
@@ -112,22 +99,33 @@ function configure() {
     ];
     var parser = new dashdash.Parser({options: cli_options});
 
+    var opts;
+    var log = bunyan.createLogger({
+        level: (process.env.LOG_LEVEL || 'info'),
+        name: 'muppet',
+        stream: process.stdout,
+        serializers: {
+            err: bunyan.stdSerializers.err
+        }
+    });
+
     try {
         opts = parser.parse(process.argv);
         assert.object(opts, 'options');
     } catch (e) {
-        LOG.fatal(e, 'invalid options');
+        log.fatal(e, 'invalid options');
         process.exit(1);
     }
 
     if (opts.help)
         usage();
 
+    var cfg;
     try {
         const _f = opts.file || __dirname + '/etc/config.json';
         cfg = JSON.parse(fs.readFileSync(_f, 'utf8'));
     } catch (e) {
-        LOG.fatal(e, 'unable to parse %s', _f);
+        log.fatal(e, 'unable to parse %s', _f);
         process.exit(1);
     }
 
@@ -138,19 +136,19 @@ function configure() {
         'config.untrustedIPs');
 
     if (cfg.logLevel)
-        LOG.level(cfg.logLevel);
+        log.level(cfg.logLevel);
 
     if (opts.verbose) {
         opts.verbose.forEach(function () {
-            LOG.level(Math.max(bunyan.TRACE, (LOG.level() - 10)));
+            log.level(Math.max(bunyan.TRACE, (log.level() - 10)));
         });
     }
 
-    if (LOG.level() <= bunyan.DEBUG)
-        LOG = LOG.child({src: true});
+    if (log.level() <= bunyan.DEBUG)
+        log = log.child({src: true});
 
-    cfg.log = LOG;
-    cfg.zookeeper.log = LOG;
+    cfg.log = log;
+    cfg.zookeeper.log = log;
 
     return (cfg);
 }
@@ -173,7 +171,7 @@ function usage(msg) {
 function startWatch(opts, cb) {
     assert.object(opts, 'options');
     assert.object(opts.config, 'options.config');
-    assert.object(opts.log, 'options.log');
+    assert.object(opts.config.log, 'options.config.log');
     assert.object(opts.zk, 'options.zk');
     assert.func(cb, 'callback');
 
@@ -183,9 +181,9 @@ function startWatch(opts, cb) {
         _cb = once(_cb);
 
         const cfg = opts.config;
-        const watch = new core.createWatch({
+        var watch = new core.createWatch({
             domain: cfg.name,
-            log: opts.log,
+            log: cfg.log,
             zk: opts.zk
         });
         watch.start(function onStart(startErr) {
@@ -196,7 +194,7 @@ function startWatch(opts, cb) {
 
             // ZooKeeper errors should redrive here.
             watch.on('error', function (err) {
-                opts.log.error(err, 'watch failed; stopping watch.');
+                cfg.log.error(err, 'watch failed; stopping watch.');
                 watch.stop();
             });
 
@@ -205,19 +203,19 @@ function startWatch(opts, cb) {
                     trustedIP: cfg.trustedIP,
                     untrustedIPs: cfg.untrustedIPs,
                     hosts: hosts || [],
-                    log: opts.log.child({component: 'lb_manager'}),
+                    log: cfg.log.child({component: 'lb_manager'}),
                     restart: cfg.restart
                 };
                 core.restartLB(_opts, function (err) {
                     if (err) {
-                        opts.log.error({
+                        cfg.log.error({
                             hosts: hosts,
                             err: err
                         }, 'lb restart failed');
                         return;
                     }
 
-                    opts.log.info({
+                    cfg.log.info({
                         hosts: hosts
                     }, 'lb restarted');
                 });
@@ -233,7 +231,7 @@ function startWatch(opts, cb) {
         retry.setStrategy(new backoff.ExponentialStrategy());
 
         retry.on('backoff', function (num, delay, err) {
-            opts.log.warn({
+            opts.config.log.warn({
                 err: err,
                 num_attempts: num,
                 delay: delay
@@ -248,7 +246,6 @@ function startWatch(opts, cb) {
 
 function zookeeper(cfg) {
     assert.object(cfg, 'cfg');
-    assert.object(cfg.zookeeper, 'cfg.zookeeper');
     assert.object(cfg.zookeeper.log, 'cfg.zookeeper.log');
     assert.arrayOfObject(cfg.zookeeper.servers, 'cfg.zookeeper.servers');
     assert.number(cfg.zookeeper.timeout, 'cfg.zookeeper.number');
@@ -270,7 +267,7 @@ function zookeeper(cfg) {
 
         zk.once('connect', function () {
             zk.removeAllListeners('error');
-            LOG.info({
+            cfg.log.info({
                 zk: zk.toString()
             }, 'ZooKeeper client acquired');
 
@@ -288,11 +285,10 @@ function zookeeper(cfg) {
     var retry = backoff.call(_zk, {}, function (_, zk) {
         startWatch({
             config: cfg,
-            log: LOG,
             zk: zk
         }, function (_dummy2, watcher) {
             zk.on('error', function onError(err) {
-                LOG.error(err, 'ZooKeeper: error');
+                cfg.log.error(err, 'ZooKeeper: error');
                 if (watcher)
                     watcher.stop();
 
@@ -309,7 +305,7 @@ function zookeeper(cfg) {
     retry.setStrategy(new backoff.ExponentialStrategy());
 
     retry.on('backoff', function (num, delay, err) {
-        LOG.warn({
+        cfg.log.warn({
             err: err,
             num_attempts: num,
             delay: delay
@@ -327,11 +323,11 @@ function zookeeper(cfg) {
     getUntrustedIPs(cfg, function (err) {
         if (err) {
             // We failed to load our IPs: abort.
-            LOG.fatal(err, 'Failed to look up any IPs');
+            cfg.log.fatal(err, 'Failed to look up any IPs');
             process.exit(1);
         }
 
-        LOG.info({
+        cfg.log.info({
             trustedIP: cfg.trustedIP,
             untrustedIPs: cfg.untrustedIPs
         }, 'Selected IPs for untrusted networks');
