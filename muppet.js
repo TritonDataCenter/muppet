@@ -246,14 +246,30 @@ function startWatch(opts, cb) {
 
 function zookeeper(cfg) {
     assert.object(cfg, 'cfg');
+    assert.object(cfg.log, 'cfg.log');
 
     core.createZKClient(cfg, function (err, zk_client) {
+        if (err) {
+            cfg.log.error(err, 'unable to create ZooKeeper client');
+            process.exit(1);
+        }
+
         zk_client.on('session', function onSession() {
-            cfg.log.info('ZooKeeper session started');        
+            cfg.log.info('ZooKeeper session started');
+            // TODO: put watch init here or connect?
         });
 
         zk_client.on('connect', function onConnect() {
             cfg.log.info('ZooKeeper successfully connected');
+        });
+
+        zk_client.on('close', function onClose() {
+            cfg.log.warn('ZooKeeper connection closed');
+        });
+
+        zk_client.on('expire', function onClose() {
+            cfg.log.warn('ZooKeeper connection expired');
+            // TODO: handle?
         });
 
         zk_client.on('failed', function onFailed(err) {
