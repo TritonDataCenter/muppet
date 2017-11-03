@@ -246,74 +246,47 @@ function startWatch(opts, cb) {
 
 function zookeeper(cfg) {
     assert.object(cfg, 'cfg');
-    assert.object(cfg.zookeeper.log, 'cfg.zookeeper.log');
-    assert.arrayOfObject(cfg.zookeeper.servers, 'cfg.zookeeper.servers');
-    assert.number(cfg.zookeeper.timeout, 'cfg.zookeeper.number');
-    // sapi manifest config looks like
-    // "servers": [ {
-    //     "host": "10.99.99.11",
-    //     "port": 2181
-    // } ],
-    // "timeout": 60000
-    function _zk(_, cb) {
-        cb = once(cb);
-        const shost = cfg.zookeeper.servers[0].host;
-        const sport = cfg.zookeeper.servers[0].port;
 
-        var zk = zkstream.Client({
-            address: shost,
-            port: sport
+    core.createZKClient(cfg, function (err, zk_client) {
+        zk_client.on('session', function onSession() {
+            cfg.log.info('ZooKeeper session started');        
         });
 
-        zk.once('connect', function () {
-            zk.removeAllListeners('error');
-            cfg.log.info({
-                zk: zk.toString()
-            }, 'ZooKeeper client acquired');
-
-            cb(null, zk);
+        zk_client.on('connect', function onConnect() {
+            cfg.log.info('ZooKeeper successfully connected');
         });
 
-        zk.once('error', function (err) {
-            zk.removeAllListeners('connect');
-            cb(err);
+        zk_client.on('failed', function onFailed(err) {
+            cfg.log.error(err, 'ZooKeeper: error');
+            process.exit(1);
         });
-
-        zk.connect();
     }
-
-    var retry = backoff.call(_zk, {}, function (_, zk) {
-        startWatch({
-            config: cfg,
-            zk: zk
-        }, function (_dummy2, watcher) {
-            zk.on('error', function onError(err) {
-                cfg.log.error(err, 'ZooKeeper: error');
-                if (watcher)
-                    watcher.stop();
-
-                zk.close();
-
-                zk.removeAllListeners('connect');
-                zk.removeAllListeners('error');
-
-                process.nextTick(zookeeper);
-            });
-        });
-    });
-    retry.failAfter(Infinity);
-    retry.setStrategy(new backoff.ExponentialStrategy());
-
-    retry.on('backoff', function (num, delay, err) {
-        cfg.log.warn({
-            err: err,
-            num_attempts: num,
-            delay: delay
-        }, 'failed to create ZooKeeper client');
-    });
-
-    retry.start();
 }
+
+function watcher(cfg) {
+//     startWatch({
+//         config: cfg,
+//         zk: zk
+//     }, function (_dummy2, watcher) {
+//         zk.on('error', function onError(err) {
+//             cfg.log.error(err, 'ZooKeeper: error');
+//             if (watcher)
+//                 watcher.stop();
+
+//             zk.close();
+
+//             zk.removeAllListeners('connect');
+//             zk.removeAllListeners('error');
+
+//             process.nextTick(zookeeper);
+//         });
+//     });
+// });
+
+}
+
+
+
 
 ///--- Mainline
 
