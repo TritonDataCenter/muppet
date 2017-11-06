@@ -8,17 +8,17 @@
  * Copyright (c) 2017, Joyent, Inc.
  */
 
-var fs = require('fs');
-var assert = require('assert-plus');
-var backoff = require('backoff');
-var bunyan = require('bunyan');
-var dashdash = require('dashdash');
-var forkexec = require('forkexec');
-var net = require('net');
-var once = require('once');
-var VError = require('verror');
-var zkstream = require('zkstream');
-var core = require('./lib');
+const fs = require('fs');
+const assert = require('assert-plus');
+const backoff = require('backoff');
+const bunyan = require('bunyan');
+const dashdash = require('dashdash');
+const forkexec = require('forkexec');
+const net = require('net');
+const once = require('once');
+const VError = require('verror');
+const zkstream = require('zkstream');
+const core = require('./lib');
 
 
 ///--- Helper functions
