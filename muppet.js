@@ -244,6 +244,21 @@ function startWatch(opts, cb) {
     start();
 }
 
+function watcher(cfg, zk_client) {
+    startWatch({
+        config: cfg,
+        zk: zk_client
+    }, function (_dummy, watch) {
+        zk_client.on('failed', function onError(err) {
+            cfg.log.error(err, 'ZooKeeper: error');
+            if (watch) {
+                watch.stop();
+            }
+            zk_client.close();
+        });
+    });
+}
+
 function zookeeper(cfg) {
     assert.object(cfg, 'cfg');
     assert.object(cfg.log, 'cfg.log');
@@ -256,7 +271,7 @@ function zookeeper(cfg) {
 
         zk_client.on('session', function onSession() {
             cfg.log.info('ZooKeeper session started');
-            // TODO: put watch init here or connect?
+            watcher(cfg, zk_client);
         });
 
         zk_client.on('connect', function onConnect() {
@@ -267,47 +282,23 @@ function zookeeper(cfg) {
             cfg.log.warn('ZooKeeper connection closed');
         });
 
-        zk_client.on('expire', function onClose() {
+        zk_client.on('expire', function onExpire() {
             cfg.log.warn('ZooKeeper connection expired');
             // TODO: handle?
         });
 
-        zk_client.on('failed', function onFailed(err) {
-            cfg.log.error(err, 'ZooKeeper: error');
+        zk_client.on('failed', function onFailed(onerr) {
+            cfg.log.error(onerr, 'ZooKeeper: error');
             process.exit(1);
         });
-    }
+    });
 }
-
-function watcher(cfg) {
-//     startWatch({
-//         config: cfg,
-//         zk: zk
-//     }, function (_dummy2, watcher) {
-//         zk.on('error', function onError(err) {
-//             cfg.log.error(err, 'ZooKeeper: error');
-//             if (watcher)
-//                 watcher.stop();
-
-//             zk.close();
-
-//             zk.removeAllListeners('connect');
-//             zk.removeAllListeners('error');
-
-//             process.nextTick(zookeeper);
-//         });
-//     });
-// });
-
-}
-
-
 
 
 ///--- Mainline
 
 (function main() {
-    const cfg = configure();
+    var cfg = configure();
 
     getUntrustedIPs(cfg, function (err) {
         if (err) {
