@@ -8,6 +8,15 @@
  * Copyright (c) 2017, Joyent, Inc.
  */
 
+/* JSLint has a problem with 'use strict', but we want it on so
+ * const fails if reassignment is attempted. With strict off, const
+ * reassignments are silently dropped on the floor
+ */
+
+/*jsl:ignore*/
+'use strict';
+/*jsl:end*/
+
 const fs = require('fs');
 const assert = require('assert-plus');
 const backoff = require('backoff');
