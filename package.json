@@ -18,7 +18,7 @@
         "zkstream":"git+https://cr.joyent.us/joyent/node-zkstream#e5db113bd2b0e960e05dd44504c06cbc998553b7"
     },
     "devDependencies": {
-        "nodeunit": "0.7.4"
+        "nodeunit": "0.11.2"
     },
     "scripts": {
         "start": "node ./muppet.js"
