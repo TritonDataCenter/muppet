@@ -15,7 +15,7 @@
         "once": "1.4.0",
         "vasync": "2.0.0",
         "verror": "1.10.0",
-        "zkstream":"git+https://cr.joyent.us/joyent/node-zkstream#e5db113bd2b0e960e05dd44504c06cbc998553b7"
+        "zkstream":"0.10.0"
     },
     "devDependencies": {
         "nodeunit": "0.11.2"
