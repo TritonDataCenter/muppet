@@ -190,7 +190,7 @@ function startWatch(opts, cb) {
         _cb = once(_cb);
 
         const cfg = opts.config;
-        var watch = new core.createWatch({
+        const watch = new core.createWatch({
             domain: cfg.name,
             log: cfg.log,
             zk: opts.zk
