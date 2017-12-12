@@ -205,6 +205,7 @@ function startWatch(opts, cb) {
             watch.on('error', function (err) {
                 cfg.log.error(err, 'watch failed; stopping watch.');
                 watch.stop();
+                // TODO: should we let SMF handle this and just abort?
             });
 
             watch.on('hosts', function onHosts(hosts) {
@@ -246,7 +247,6 @@ function startWatch(opts, cb) {
                 delay: delay
             }, 'failed to start ZooKeeper watch');
         });
-
         retry.start();
     }
 
