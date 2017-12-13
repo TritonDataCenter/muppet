@@ -26,6 +26,7 @@ const forkexec = require('forkexec');
 const net = require('net');
 const once = require('once');
 const VError = require('verror');
+const exec = require('child_process').exec;
 const zkstream = require('zkstream');
 const core = require('./lib');
 
@@ -106,9 +107,8 @@ function configure() {
             helpArg: 'FILE'
         }
     ];
-    var parser = new dashdash.Parser({options: cli_options});
 
-    var opts;
+    const parser = new dashdash.Parser({options: cli_options});
     var log = bunyan.createLogger({
         level: (process.env.LOG_LEVEL || 'info'),
         name: 'muppet',
@@ -118,6 +118,7 @@ function configure() {
         }
     });
 
+    var opts;
     try {
         opts = parser.parse(process.argv);
         assert.object(opts, 'options');
@@ -126,8 +127,9 @@ function configure() {
         process.exit(1);
     }
 
-    if (opts.help)
+    if (opts.help) {
         usage();
+    }
 
     var cfg;
     try {
@@ -177,6 +179,33 @@ function usage(msg) {
 
 ///--- Internal Functions
 
+/*
+ * For errors where we have no real way to recover without a complete
+ * bootstrap, it is sometimes easier to just restart
+ */
+function restartMuppet(log, cb) {
+    // SMF adds SMF_FMRI as a environment variable
+    // Fall back on a common name if it is not there for some reason
+    const smf_fmri = (process.env.SMF_FMRI || '/manta/muppet');
+    const restart = '/usr/sbin/svcadm restart ' + smf_fmri;
+    log.warn('Restarting muppet with: %s...', restart);
+
+    var retry = backoff.call(exec, restart, cb);
+    retry.failAfter(3);
+    retry.setStrategy(new backoff.ExponentialStrategy({
+        initialDelay: 1000
+    }));
+    retry.on('backoff', function (number, delay, err) {
+        log.debug({
+            attempt: number,
+            delay: delay,
+            err: err
+        }, 'Muppet restart attempted');
+    });
+    retry.start();
+}
+
+
 function startWatch(opts, cb) {
     assert.object(opts, 'options');
     assert.object(opts.config, 'options.config');
@@ -201,15 +230,18 @@ function startWatch(opts, cb) {
                 return;
             }
 
-            // ZooKeeper errors should redrive here.
+            // ZooKeeper errors will cause the Watcher to emit `error`
             watch.on('error', function (err) {
-                cfg.log.error(err, 'watch failed; stopping watch.');
+                cfg.log.error(err, 'watch failed; restarting muppet.');
                 watch.stop();
-                // TODO: should we let SMF handle this and just abort?
+                // Restart the process with SMF for lack of a better
+                // option of recovery.
+                restartMuppet(cfg.log, _cb);
             });
 
+            // Watcher emits `hosts` on a change to hosts in ZK
             watch.on('hosts', function onHosts(hosts) {
-                var _opts = {
+                const _opts = {
                     trustedIP: cfg.trustedIP,
                     untrustedIPs: cfg.untrustedIPs,
                     hosts: hosts || [],
@@ -293,7 +325,6 @@ function zookeeper(cfg) {
 
         zk_client.on('expire', function onExpire() {
             cfg.log.warn('ZooKeeper connection expired');
-            // TODO: handle?
         });
 
         zk_client.on('failed', function onFailed(onerr) {
