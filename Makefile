@@ -48,8 +48,6 @@ SMF_MANIFESTS_IN = smf/manifests/$(MY_NAME).xml.in smf/manifests/haproxy.xml.in 
 NODE_PREBUILT_TAG	= zone
 NODE_PREBUILT_VERSION   := v4.6.1
 NODE_PREBUILT_IMAGE     = 18b094b0-eb01-11e5-80c1-175dac7ddf02
-#NODE_PREBUILT_VERSION	:= v0.10.32
-#NODE_PREBUILT_IMAGE	= de411e86-548d-11e4-a4b7-3bb60478632a
 
 include ./tools/mk/Makefile.defs
 include ./tools/mk/Makefile.haproxy.defs
