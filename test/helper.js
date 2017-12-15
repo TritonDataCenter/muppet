@@ -1,8 +1,16 @@
-// Copyright 2012 Mark Cavage.  All rights reserved.
-//
-// Just a simple wrapper over nodeunit's exports syntax. Also exposes
-// a common logger for all tests.
-//
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
+/*
+ * Copyright (c) 2017, Joyent, Inc.
+ */
+
+/*jsl:ignore*/
+'use strict';
+/*jsl:end*/
 
 const bunyan = require('bunyan');
 const vasync = require('vasync');

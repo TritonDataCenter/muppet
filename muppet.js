@@ -59,14 +59,14 @@ function getUntrustedIPs(cfg, callback) {
 
         cfg.log.info({ nics: nics }, 'Looked up NICs');
 
-        nics.forEach(function (nic) {
+        function addIPsFromNics(nic) {
             // Skip NICs on trusted networks.
             if (nic.nic_tag === 'admin' || nic.nic_tag === 'manta') {
                 return;
             }
 
             if (nic.hasOwnProperty('ips')) {
-                nic.ips.forEach(function (addr) {
+                nic.ips.forEach(function parseIP(addr) {
                     const ip = addr.split('/')[0];
                     if (net.isIPv4(ip) || net.isIPv6(ip)) {
                         cfg.untrustedIPs.push(ip);
@@ -79,8 +79,9 @@ function getUntrustedIPs(cfg, callback) {
             } else {
                 cfg.log.warn({ nic: nic }, 'NIC has no IP addresses');
             }
-        });
+        }
 
+        nics.forEach(addIPsFromNics);
         callback();
     });
 }
