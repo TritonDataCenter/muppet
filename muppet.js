@@ -329,9 +329,8 @@ function zookeeper(cfg) {
         });
 
         /*
-         * zkstream uses cueball to attempt to retry
-         * the connection to zookeeper. On retry exhaustion
-         * it will emit a `failed` event.
+         * zkstream attempts to retry the connection to zookeeper. On retry
+         * exhaustion it will emit a `failed` event.
          */
         zk_client.on('failed', function onFailed(err) {
             cfg.log.error(err, 'ZooKeeper: error');
