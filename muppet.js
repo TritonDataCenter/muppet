@@ -231,7 +231,12 @@ function startWatch(opts, cb) {
                 return;
             }
 
-            // ZooKeeper errors will cause the Watcher to emit `error`
+            /*
+             * zkstream does not document any possibility of emitting
+             * an `error` event, but put this in to catch any corner
+             * case that wasn't seen in testing and continue functioning
+             * with a restart
+             */
             watch.on('error', function (err) {
                 cfg.log.error(err, 'watch failed; restarting muppet.');
                 watch.stop();
@@ -268,36 +273,30 @@ function startWatch(opts, cb) {
         });
     }
 
-    function start() {
-        const retry = backoff.call(_start, {}, cb);
-        retry.failAfter(Infinity);
-        retry.setStrategy(new backoff.ExponentialStrategy());
+    const retry = backoff.call(_start, {}, cb);
+    retry.failAfter(Infinity);
+    retry.setStrategy(new backoff.ExponentialStrategy());
 
-        retry.on('backoff', function (num, delay, err) {
-            opts.config.log.warn({
-                err: err,
-                num_attempts: num,
-                delay: delay
-            }, 'failed to start ZooKeeper watch');
-        });
-        retry.start();
-    }
-
-    start();
+    retry.on('backoff', function (num, delay, err) {
+        opts.config.log.warn({
+            err: err,
+            num_attempts: num,
+            delay: delay
+        }, 'failed to start ZooKeeper watch');
+    });
+    retry.start();
 }
 
 function watcher(cfg, zk_client) {
     startWatch({
         config: cfg,
         zk: zk_client
-    }, function (_dummy, watch) {
-        zk_client.on('failed', function onError(err) {
-            cfg.log.error(err, 'ZooKeeper: error');
-            if (watch) {
-                watch.stop();
-            }
-            zk_client.close();
-        });
+    }, function (err, watch) {
+        if (err) {
+            cfg.log.fatal(err, 'Failed to start watch');
+            process.exit(1);
+        }
+        cfg.log.info('ZooKeeper watch created');
     });
 }
 
@@ -305,11 +304,12 @@ function zookeeper(cfg) {
     assert.object(cfg, 'cfg');
     assert.object(cfg.log, 'cfg.log');
 
-    core.createZKClient(cfg, function (err, zk_client) {
-        if (err) {
-            cfg.log.error(err, 'unable to create ZooKeeper client');
-            process.exit(1);
-        }
+    core.createZKClient(cfg, function (_, zk_client) {
+        /*
+         * zkstream.Client does not have an error callback
+         * so assert on the object for some safety
+         */
+        assert.object(zk_client, 'zk_client');
 
         zk_client.on('session', function onSession() {
             cfg.log.info('ZooKeeper session started');
@@ -328,8 +328,13 @@ function zookeeper(cfg) {
             cfg.log.warn('ZooKeeper connection expired');
         });
 
-        zk_client.on('failed', function onFailed(onerr) {
-            cfg.log.error(onerr, 'ZooKeeper: error');
+        /*
+         * zkstream uses cueball to attempt to retry
+         * the connection to zookeeper. On retry exhaustion
+         * it will emit a `failed` event.
+         */
+        zk_client.on('failed', function onFailed(err) {
+            cfg.log.error(err, 'ZooKeeper: error');
             process.exit(1);
         });
     });
