@@ -291,7 +291,7 @@ function watcher(cfg, zk_client) {
     startWatch({
         config: cfg,
         zk: zk_client
-    }, function (err, watch) {
+    }, function onStartWatch(err, watch) {
         if (err) {
             cfg.log.fatal(err, 'Failed to start watch');
             process.exit(1);
