@@ -26,7 +26,6 @@ const forkexec = require('forkexec');
 const net = require('net');
 const once = require('once');
 const VError = require('verror');
-const exec = require('child_process').exec;
 const zkstream = require('zkstream');
 const core = require('./lib');
 
@@ -180,33 +179,6 @@ function usage(msg) {
 
 ///--- Internal Functions
 
-/*
- * For errors where we have no real way to recover without a complete
- * bootstrap, it is sometimes easier to just restart
- */
-function restartMuppet(log, cb) {
-    // SMF adds SMF_FMRI as a environment variable
-    // Fall back on a common name if it is not there for some reason
-    const smf_fmri = (process.env.SMF_FMRI || '/manta/muppet');
-    const restart = '/usr/sbin/svcadm restart ' + smf_fmri;
-    log.warn('Restarting muppet with: %s...', restart);
-
-    var retry = backoff.call(exec, restart, cb);
-    retry.failAfter(3);
-    retry.setStrategy(new backoff.ExponentialStrategy({
-        initialDelay: 1000
-    }));
-    retry.on('backoff', function (number, delay, err) {
-        log.debug({
-            attempt: number,
-            delay: delay,
-            err: err
-        }, 'Muppet restart attempted');
-    });
-    retry.start();
-}
-
-
 function startWatch(opts, cb) {
     assert.object(opts, 'options');
     assert.object(opts.config, 'options.config');
@@ -230,20 +202,6 @@ function startWatch(opts, cb) {
                 _cb(startErr);
                 return;
             }
-
-            /*
-             * zkstream does not document any possibility of emitting
-             * an `error` event, but put this in to catch any corner
-             * case that wasn't seen in testing and continue functioning
-             * with a restart
-             */
-            watch.on('error', function (err) {
-                cfg.log.error(err, 'watch failed; restarting muppet.');
-                watch.stop();
-                // Restart the process with SMF for lack of a better
-                // option of recovery.
-                restartMuppet(cfg.log, _cb);
-            });
 
             // Watcher emits `hosts` on a change to hosts in ZK
             watch.on('hosts', function onHosts(hosts) {
@@ -304,38 +262,32 @@ function zookeeper(cfg) {
     assert.object(cfg, 'cfg');
     assert.object(cfg.log, 'cfg.log');
 
-    core.createZKClient(cfg, function (_, zk_client) {
-        /*
-         * zkstream.Client does not have an error callback
-         * so assert on the object for some safety
-         */
-        assert.object(zk_client, 'zk_client');
+    const zk_client = core.createZKClient(cfg);
 
-        zk_client.on('session', function onSession() {
-            cfg.log.info('ZooKeeper session started');
-            watcher(cfg, zk_client);
-        });
+    zk_client.on('session', function onSession() {
+        cfg.log.info('ZooKeeper session started');
+        watcher(cfg, zk_client);
+    });
 
-        zk_client.on('connect', function onConnect() {
-            cfg.log.info('ZooKeeper successfully connected');
-        });
+    zk_client.on('connect', function onConnect() {
+        cfg.log.info('ZooKeeper successfully connected');
+    });
 
-        zk_client.on('close', function onClose() {
-            cfg.log.warn('ZooKeeper connection closed');
-        });
+    zk_client.on('close', function onClose() {
+        cfg.log.warn('ZooKeeper connection closed');
+    });
 
-        zk_client.on('expire', function onExpire() {
-            cfg.log.warn('ZooKeeper connection expired');
-        });
+    zk_client.on('expire', function onExpire() {
+        cfg.log.warn('ZooKeeper connection expired');
+    });
 
-        /*
-         * zkstream attempts to retry the connection to zookeeper. On retry
-         * exhaustion it will emit a `failed` event.
-         */
-        zk_client.on('failed', function onFailed(err) {
-            cfg.log.error(err, 'ZooKeeper: error');
-            process.exit(1);
-        });
+    /*
+     * zkstream attempts to retry the connection to zookeeper. On retry
+     * exhaustion it will emit a `failed` event.
+     */
+    zk_client.on('failed', function onFailed(err) {
+        cfg.log.error(err, 'ZooKeeper: error');
+        process.exit(1);
     });
 }
 
