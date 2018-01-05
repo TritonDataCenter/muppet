@@ -286,7 +286,7 @@ function zookeeper(cfg) {
      * exhaustion it will emit a `failed` event.
      */
     zk_client.on('failed', function onFailed(err) {
-        cfg.log.error(err, 'ZooKeeper: error');
+        cfg.log.fatal(err, 'ZooKeeper: received failed event');
         process.exit(1);
     });
 }
