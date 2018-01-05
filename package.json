@@ -8,17 +8,17 @@
         "assert-plus": "1.0.0",
         "backoff": "2.3.0",
         "bunyan": "2.0.2",
-        "dashdash": "1.4.0",
+        "dashdash": "1.14.1",
         "forkexec": "1.1.0",
         "jsprim": "1.4.0",
         "node-uuid": "1.4.1",
-        "once": "1.3.0",
+        "once": "1.4.0",
         "vasync": "2.0.0",
-        "verror": "1.9.0",
-        "zkplus": "0.3.2-smartos-only"
+        "verror": "1.10.0",
+        "zkstream":"0.10.1"
     },
     "devDependencies": {
-        "nodeunit": "0.7.4"
+        "nodeunit": "0.11.2"
     },
     "scripts": {
         "start": "node ./muppet.js"

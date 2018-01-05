@@ -1,5 +1,5 @@
 {
     "name": "ssl_cert",
     "path": "/opt/smartdc/muppet/etc/ssl.pem",
-	"master": true
+    "master": true
 }

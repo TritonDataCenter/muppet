@@ -1,5 +1,5 @@
 {
     "name": "registrar",
     "path": "/opt/smartdc/registrar/etc/config.json",
-	"master": true
+    "master": true
 }

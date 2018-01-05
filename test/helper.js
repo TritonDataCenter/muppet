@@ -1,14 +1,22 @@
-// Copyright 2012 Mark Cavage.  All rights reserved.
-//
-// Just a simple wrapper over nodeunit's exports syntax. Also exposes
-// a common logger for all tests.
-//
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 
-var bunyan = require('bunyan');
-var vasync = require('vasync');
-var zkplus = require('zkplus');
+/*
+ * Copyright (c) 2017, Joyent, Inc.
+ */
 
-var core = require('../lib');
+/*jsl:ignore*/
+'use strict';
+/*jsl:end*/
+
+const bunyan = require('bunyan');
+const vasync = require('vasync');
+const zkstream = require('zkstream');
+
+const core = require('../lib');
 
 
 
@@ -29,29 +37,25 @@ function createLogger(name, stream) {
 
 
 function createZkClient(callback) {
-        var host = process.env.ZK_HOST || 'localhost';
+        const host = process.env.ZK_HOST || 'localhost';
         var log = createLogger();
-        var port = process.env.ZK_PORT || 2181;
+        const port = process.env.ZK_PORT || 2181;
 
-        var zk = zkplus.createClient({
+        core.createZKClient({
                 log: log,
                 servers: [ {
-                        host: host,
+                        address: host,
                         port: port
                 } ],
                 timeout: 100
-        });
-
-        zk.once('error', function (err) {
-                zk.removeAllListeners('connect');
+        }, function (_err, zk) {
+            zk.on('failed', function (err) {
                 callback(err);
-        });
-
-        zk.once('connect', function () {
-                zk.removeAllListeners('error');
+            });
+            zk.on('session', function () {
                 callback(null, zk);
+            });
         });
-        zk.connect();
 }
 
 
