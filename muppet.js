@@ -284,10 +284,11 @@ function zookeeper(cfg) {
     /*
      * zkstream attempts to retry the connection to zookeeper. On retry
      * exhaustion it will emit a `failed` event.
+     * For this we only log an error, because when ZK comes back up, zkstream
+     * will automatically reconnect and re-arm the watchers (if they existed)
      */
     zk_client.on('failed', function onFailed(err) {
-        cfg.log.fatal(err, 'ZooKeeper: received failed event');
-        process.exit(1);
+        cfg.log.error(err, 'ZooKeeper: received failed event');
     });
 }
 
