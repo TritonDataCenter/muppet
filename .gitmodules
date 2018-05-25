@@ -14,3 +14,7 @@
 	path = deps/haproxy-1.5
 	url = https://github.com/joyent/haproxy-1.5.git
 	branch = joyent/v1.5.19
+[submodule "haproxy-1.8"]
+	path = deps/haproxy-1.8
+	url = https://github.com/joyent/haproxy-1.8.git
+	branch = joyent/v1.8.8
