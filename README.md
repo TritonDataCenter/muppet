@@ -23,3 +23,22 @@ new configuration as hosts come and go from the given service name.
 
 Run `make prepush` before commits; otherwise, follow the
 [Joyent Engineering Guidelines](https://github.com/joyent/eng).
+
+# Testing
+
+## Prerequisites
+
+To properly run the muppet tests, two additional packages need to be installed
+from pkgsrc.
+
+  -  haproxy
+  -  diffutils
+
+Though the version of haproxy might differ from the running `loadbalancer` zone,
+it is simply used to check that haproxy can properly parse the resulting
+`haproxy.cfg` files generated in the tests.  Additionally, `GNU diff` is used to
+compare the generated files with an expected output.
+
+## Running the Tests
+
+Then to run the tests, simply run `make test`
