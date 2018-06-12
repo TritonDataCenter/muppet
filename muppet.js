@@ -58,29 +58,35 @@ function getUntrustedIPs(cfg, callback) {
 
         cfg.log.info({ nics: nics }, 'Looked up NICs');
 
-        function addIPsFromNics(nic) {
-            // Skip NICs on trusted networks.
-            if (nic.nic_tag === 'admin' || nic.nic_tag === 'manta') {
+        function _pushIP(ip) {
+            /* If this is an admin, manta, or other trusted IP, skip it. */
+            if ((cfg.adminIPS && cfg.adminIPS.indexOf(ip) !== -1) ||
+                (cfg.mantaIPS && cfg.mantaIPS.indexOf(ip) !== -1) ||
+                ip === cfg.trustedIP)  {
+
                 return;
             }
 
+            if (!net.isIPv4(ip) && !net.isIPv6(ip)) {
+                return;
+            }
+
+            cfg.untrustedIPs.push(ip);
+        }
+
+        function _addIPsFromNics(nic) {
             if (nic.hasOwnProperty('ips')) {
                 nic.ips.forEach(function parseIP(addr) {
-                    const ip = addr.split('/')[0];
-                    if (net.isIPv4(ip) || net.isIPv6(ip)) {
-                        cfg.untrustedIPs.push(ip);
-                    }
+                    _pushIP(addr.split('/')[0]);
                 });
             } else if (nic.hasOwnProperty('ip')) {
-                if (net.isIPv4(nic.ip)) {
-                    cfg.untrustedIPs.push(nic.ip);
-                }
+                _pushIP(nic.ip);
             } else {
                 cfg.log.warn({ nic: nic }, 'NIC has no IP addresses');
             }
         }
 
-        nics.forEach(addIPsFromNics);
+        nics.forEach(_addIPsFromNics);
         callback();
     });
 }
@@ -135,6 +141,12 @@ function configure() {
     try {
         const _f = opts.file || __dirname + '/etc/config.json';
         cfg = JSON.parse(fs.readFileSync(_f, 'utf8'));
+        if (cfg.adminIPS && typeof (cfg.adminIPS) === 'string') {
+            cfg.adminIPS = cfg.adminIPS.split(',');
+        }
+        if (cfg.mantaIPS && typeof (cfg.mantaIPS) === 'string') {
+            cfg.mantaIPS = cfg.mantaIPS.split(',');
+        }
     } catch (e) {
         log.fatal(e, 'unable to parse %s', _f);
         process.exit(1);
