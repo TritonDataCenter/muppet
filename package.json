@@ -14,7 +14,7 @@
         "haproxy-stat" : "0.1.0",
         "node-uuid": "1.4.1",
         "once": "1.4.0",
-        "vasync": "2.0.0",
+        "vasync": "2.2.0",
         "verror": "1.10.0",
         "zkstream":"0.10.1"
     },
