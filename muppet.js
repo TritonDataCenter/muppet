@@ -239,6 +239,16 @@ function startWatch(opts, cb) {
                 });
             });
 
+            /*
+             * Watcher directly handles certain classes of zookeeper errors, but
+             * emits an error event for those not directly handled.
+             */
+            watch.on('error', function onError(err) {
+                cfg.log.error({
+                    err: err
+                }, 'zookeeper error');
+            });
+
             _cb(null, watch);
         });
     }
