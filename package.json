@@ -10,8 +10,8 @@
         "bunyan": "2.0.2",
         "dashdash": "1.14.1",
         "forkexec": "1.1.0",
+        "haproxy-stat": "0.1.0",
         "jsprim": "1.4.0",
-        "haproxy-stat" : "0.1.0",
         "node-uuid": "1.4.1",
         "once": "1.4.0",
         "vasync": "2.2.0",
@@ -19,7 +19,8 @@
         "zkstream": "0.11.3"
     },
     "devDependencies": {
-        "nodeunit": "0.11.2"
+        "nodeunit": "0.11.2",
+        "diff": "4.0.1"
     },
     "scripts": {
         "start": "node ./muppet.js"

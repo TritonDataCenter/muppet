@@ -7,13 +7,12 @@
 /*
  * Copyright (c) 2017, Joyent, Inc.
  */
-
 var vasync = require('vasync');
-var execFile = require('child_process').execFile;
 var helper = require('./helper.js');
 var lbm = require('../lib/lb_manager.js');
 var path = require('path');
 var fs = require('fs');
+var jsdiff = require('diff');
 
 ///--- Globals
 var test = helper.test;
@@ -110,15 +109,24 @@ test('test writeHaproxyConfig', function (t) {
     };
     lbm.writeHaproxyConfig(opts, function (err, data) {
         t.equal(null, err);
-        // compare output file with reference
-        execFile('diff', ['-wq', '-I', 'log-send-hostname',
-                          updConfig_out, updConfig_out_chk],
-            function (error, _stdout, _stderr) {
-                t.equal(null, error);
-                // cleanup test file
-                fs.unlinkSync(updConfig_out);
-                t.done();
-            });
+        var test_txt = fs.readFileSync(updConfig_out, 'utf8');
+        var check_txt = fs.readFileSync(updConfig_out_chk, 'utf8');
+
+        var diff = jsdiff.diffTrimmedLines(test_txt, check_txt);
+
+        diff.forEach(function (part) {
+            if (part.added) {
+                if (! part.value.includes('log-send-hostname')) {
+                    t.equal(null, part.value);
+                }
+            } else if (part.removed) {
+                if (! part.value.includes('log-send-hostname')) {
+                    t.equal(null, part.value);
+                }
+            }
+        });
+        fs.unlinkSync(updConfig_out);
+        t.done();
     });
 });
 
