@@ -1,6 +1,8 @@
+/make_stamps
 /node_modules
 /tmp
-build
+/bits
+/build
 docs/*.json
 docs/*.html
 etc/haproxy.cfg
@@ -8,4 +10,4 @@ cscope.in.out
 cscope.po.out
 cscope.out
 smf/manifests/*.xml
-/*.tar.bz2
+/*.tar.gz
