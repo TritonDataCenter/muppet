@@ -16,7 +16,7 @@
         "once": "1.4.0",
         "vasync": "2.2.0",
         "verror": "1.10.0",
-        "zkstream": "0.11.3"
+        "zkstream": "0.11.4"
     },
     "devDependencies": {
         "nodeunit": "0.11.2",
