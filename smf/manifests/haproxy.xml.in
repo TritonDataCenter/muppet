@@ -51,6 +51,8 @@
 	    </method_context>
 	</exec_method>
 
+        <exec_method name='refresh' type='method' exec='/usr/bin/pkill -USR2 -z $(zonename) -u root haproxy' timeout_seconds='30'/>
+
 	<exec_method type="method"
 		     name="stop"
 		     exec=":kill"

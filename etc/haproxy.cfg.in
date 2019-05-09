@@ -6,7 +6,7 @@ global
         maxconn 65535
         pidfile /var/run/haproxy.pid
         log-send-hostname %s
-        stats socket /tmp/haproxy mode 0600 level admin
+        stats socket /tmp/haproxy mode 0600 level admin expose-fd listeners
 
 
 defaults

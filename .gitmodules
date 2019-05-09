@@ -10,10 +10,10 @@
 [submodule "deps/manta-scripts"]
 	path = deps/manta-scripts
 	url = https://github.com/joyent/manta-scripts.git
-[submodule "deps/haproxy-1.5"]
-	path = deps/haproxy-1.5
-	url = https://github.com/joyent/haproxy-1.5.git
-	branch = joyent/v1.5.19
+[submodule "deps/haproxy-1.8"]
+	path = deps/haproxy-1.8
+	url = https://github.com/joyent/haproxy-1.8.git
+	branch = joyent/dev-v1.8.8
 [submodule "deps/eng"]
 	path = deps/eng
 	url = https://github.com/joyent/eng.git
