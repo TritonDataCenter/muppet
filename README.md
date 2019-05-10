@@ -5,7 +5,7 @@
 -->
 
 <!--
-    Copyright (c) 2014, Joyent, Inc.
+    Copyright (c) 2019, Joyent, Inc.
 -->
 
 # muppet
@@ -34,9 +34,9 @@ pkgsrc:
 - haproxy
 
 Though the version of haproxy might differ from the running `loadbalancer` zone,
-it is simply used to check that haproxy can properly parse the resulting
+it is used to check that haproxy can properly parse the resulting
 `haproxy.cfg` files generated in the tests.
 
 ## Running the Tests
 
-Then to run the tests, simply run `make test`
+Then to run the tests, run `make test`
