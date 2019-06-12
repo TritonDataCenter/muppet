@@ -17,80 +17,16 @@
 'use strict';
 /*jsl:end*/
 
-const fs = require('fs');
-const assert = require('assert-plus');
-const backoff = require('backoff');
-const bunyan = require('bunyan');
-const dashdash = require('dashdash');
-const forkexec = require('forkexec');
-const net = require('net');
-const once = require('once');
+const mod_fs = require('fs');
+const mod_assert = require('assert-plus');
+const mod_bunyan = require('bunyan');
+const mod_dashdash = require('dashdash');
+const mod_forkexec = require('forkexec');
+const mod_net = require('net');
 const VError = require('verror');
-const zkstream = require('zkstream');
-const core = require('./lib');
 
-
-///--- Helper functions
-
-function getUntrustedIPs(cfg, callback) {
-    // Allow hardcoding addresses in the configuration.
-    if (cfg.hasOwnProperty('untrustedIPs')) {
-        callback();
-        return;
-    }
-
-    cfg.untrustedIPs = [];
-
-    const args = [ '/usr/sbin/mdata-get', 'sdc:nics' ];
-    cfg.log.info({ cmd: args }, 'Loading NIC information');
-    forkexec.forkExecWait({
-        argv: args
-    }, function (err, info) {
-        if (err) {
-            cfg.log.error(info, 'Failed to load NIC information');
-            setImmediate(callback,
-                new VError(err, 'Fetching untrusted IPs failed'));
-            return;
-        }
-
-        const nics = JSON.parse(info.stdout);
-        assert.array(nics, 'nics');
-
-        cfg.log.info({ nics: nics }, 'Looked up NICs');
-
-        function _pushIP(ip) {
-            /* If this is an admin, manta, or other trusted IP, skip it. */
-            if ((cfg.adminIPS && cfg.adminIPS.indexOf(ip) !== -1) ||
-                (cfg.mantaIPS && cfg.mantaIPS.indexOf(ip) !== -1) ||
-                ip === cfg.trustedIP)  {
-
-                return;
-            }
-
-            if (!net.isIPv4(ip) && !net.isIPv6(ip)) {
-                return;
-            }
-
-            cfg.untrustedIPs.push(ip);
-        }
-
-        function _addIPsFromNics(nic) {
-            if (nic.hasOwnProperty('ips')) {
-                nic.ips.forEach(function parseIP(addr) {
-                    _pushIP(addr.split('/')[0]);
-                });
-            } else if (nic.hasOwnProperty('ip')) {
-                _pushIP(nic.ip);
-            } else {
-                cfg.log.warn({ nic: nic }, 'NIC has no IP addresses');
-            }
-        }
-
-        nics.forEach(_addIPsFromNics);
-        callback();
-    });
-}
-
+const lib_app = require('./lib/app');
+const lib_lbman = require('./lib/lb_manager');
 
 ///--- CLI Functions
 
@@ -114,20 +50,20 @@ function configure() {
         }
     ];
 
-    const parser = new dashdash.Parser({options: cli_options});
-    var log = bunyan.createLogger({
+    const parser = new mod_dashdash.Parser({options: cli_options});
+    var log = mod_bunyan.createLogger({
         level: (process.env.LOG_LEVEL || 'info'),
         name: 'muppet',
         stream: process.stdout,
         serializers: {
-            err: bunyan.stdSerializers.err
+            err: mod_bunyan.stdSerializers.err
         }
     });
 
     var opts;
     try {
         opts = parser.parse(process.argv);
-        assert.object(opts, 'options');
+        mod_assert.object(opts, 'options');
     } catch (e) {
         log.fatal(e, 'invalid options');
         process.exit(1);
@@ -140,7 +76,7 @@ function configure() {
     var cfg;
     try {
         const _f = opts.file || __dirname + '/etc/config.json';
-        cfg = JSON.parse(fs.readFileSync(_f, 'utf8'));
+        cfg = JSON.parse(mod_fs.readFileSync(_f, 'utf8'));
         if (cfg.adminIPS && typeof (cfg.adminIPS) === 'string') {
             cfg.adminIPS = cfg.adminIPS.split(',');
         }
@@ -152,10 +88,10 @@ function configure() {
         process.exit(1);
     }
 
-    assert.string(cfg.name, 'config.name');
-    assert.string(cfg.trustedIP, 'config.trustedIP');
-    assert.object(cfg.zookeeper, 'config.zookeeper');
-    assert.optionalArrayOfString(cfg.untrustedIPs,
+    mod_assert.string(cfg.name, 'config.name');
+    mod_assert.string(cfg.trustedIP, 'config.trustedIP');
+    mod_assert.object(cfg.zookeeper, 'config.zookeeper');
+    mod_assert.optionalArrayOfString(cfg.untrustedIPs,
         'config.untrustedIPs');
 
     if (cfg.logLevel)
@@ -163,11 +99,11 @@ function configure() {
 
     if (opts.verbose) {
         opts.verbose.forEach(function () {
-            log.level(Math.max(bunyan.TRACE, (log.level() - 10)));
+            log.level(Math.max(mod_bunyan.TRACE, (log.level() - 10)));
         });
     }
 
-    if (log.level() <= bunyan.DEBUG)
+    if (log.level() <= mod_bunyan.DEBUG)
         log = log.child({src: true});
 
     cfg.log = log;
@@ -188,150 +124,7 @@ function usage(msg) {
 }
 
 
-
-///--- Internal Functions
-
-function startWatch(opts, cb) {
-    assert.object(opts, 'options');
-    assert.object(opts.config, 'options.config');
-    assert.object(opts.config.log, 'options.config.log');
-    assert.object(opts.zk, 'options.zk');
-    assert.func(cb, 'callback');
-
-    cb = once(cb);
-
-    function _start(_, _cb) {
-        _cb = once(_cb);
-
-        const cfg = opts.config;
-        const watch = new core.createWatch({
-            domain: cfg.name,
-            log: cfg.log,
-            zk: opts.zk
-        });
-        watch.start(function onStart(startErr) {
-            if (startErr) {
-                _cb(startErr);
-                return;
-            }
-
-            // Watcher emits `hosts` on a change to hosts in ZK
-            watch.on('hosts', function onHosts(hosts) {
-                const _opts = {
-                    trustedIP: cfg.trustedIP,
-                    untrustedIPs: cfg.untrustedIPs,
-                    hosts: hosts || [],
-                    log: cfg.log.child({component: 'lb_manager'}),
-                    restart: cfg.restart
-                };
-                core.restartLB(_opts, function (err) {
-                    if (err) {
-                        cfg.log.error({
-                            hosts: hosts,
-                            err: err
-                        }, 'lb restart failed');
-                        return;
-                    }
-
-                    cfg.log.info({
-                        hosts: hosts
-                    }, 'lb restarted');
-                });
-            });
-
-            /*
-             * Watcher directly handles certain classes of zookeeper errors, but
-             * emits an error event for those not directly handled.
-             */
-            watch.on('error', function onError(err) {
-                cfg.log.error({
-                    err: err
-                }, 'zookeeper error');
-            });
-
-            _cb(null, watch);
-        });
-    }
-
-    const retry = backoff.call(_start, {}, cb);
-    retry.failAfter(Infinity);
-    retry.setStrategy(new backoff.ExponentialStrategy());
-
-    retry.on('backoff', function (num, delay, err) {
-        opts.config.log.warn({
-            err: err,
-            num_attempts: num,
-            delay: delay
-        }, 'failed to start ZooKeeper watch');
-    });
-    retry.start();
-}
-
-function watcher(cfg, zk_client) {
-    startWatch({
-        config: cfg,
-        zk: zk_client
-    }, function onStartWatch(err, watch) {
-        if (err) {
-            cfg.log.fatal(err, 'Failed to start watch');
-            process.exit(1);
-        }
-        cfg.log.info('ZooKeeper watch created');
-    });
-}
-
-function zookeeper(cfg) {
-    assert.object(cfg, 'cfg');
-    assert.object(cfg.log, 'cfg.log');
-
-    const zk_client = core.createZKClient(cfg);
-
-    zk_client.on('session', function onSession() {
-        cfg.log.info('ZooKeeper session started');
-        watcher(cfg, zk_client);
-    });
-
-    zk_client.on('connect', function onConnect() {
-        cfg.log.info('ZooKeeper successfully connected');
-    });
-
-    zk_client.on('close', function onClose() {
-        cfg.log.warn('ZooKeeper connection closed');
-    });
-
-    zk_client.on('expire', function onExpire() {
-        cfg.log.warn('ZooKeeper connection expired');
-    });
-
-    /*
-     * zkstream attempts to retry the connection to zookeeper. On retry
-     * exhaustion it will emit a `failed` event.
-     * For this we only log an error, because when ZK comes back up, zkstream
-     * will automatically reconnect and re-arm the watchers (if they existed)
-     */
-    zk_client.on('failed', function onFailed(err) {
-        cfg.log.error(err, 'ZooKeeper: received failed event');
-    });
-}
-
-
 ///--- Mainline
 
-(function main() {
-    var cfg = configure();
-
-    getUntrustedIPs(cfg, function (err) {
-        if (err) {
-            // We failed to load our IPs: abort.
-            cfg.log.fatal(err, 'Failed to look up any IPs');
-            process.exit(1);
-        }
-
-        cfg.log.info({
-            trustedIP: cfg.trustedIP,
-            untrustedIPs: cfg.untrustedIPs
-        }, 'Selected IPs for untrusted networks');
-
-        zookeeper(cfg);
-    });
-})();
+var config = configure();
+var app = new lib_app.AppFSM(config);
