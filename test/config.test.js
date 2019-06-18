@@ -120,7 +120,9 @@ test('test writeHaproxyConfig', function (t) {
                     t.equal(null, part.value);
                 }
             } else if (part.removed) {
-                if (! part.value.includes('log-send-hostname')) {
+                if ((! part.value.includes('log-send-hostname')) &&
+                    // the input cfg is commented
+                    (! part.value.startsWith('#'))) {
                     t.equal(null, part.value);
                 }
             }
