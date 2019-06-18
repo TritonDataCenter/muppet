@@ -1,4 +1,7 @@
 global
+        # have haproxy launch a worker process, SMF monitors the master, part of
+        # seamless config reload (via SMF refresh method)
+        master-worker
         log 127.0.0.1 local0
         user nobody
         group nobody
@@ -6,6 +9,7 @@ global
         maxconn 65535
         pidfile /var/run/haproxy.pid
         log-send-hostname %s
+        # expose-fd listeners also required for seamless config reload
         stats socket /tmp/haproxy mode 0600 level admin expose-fd listeners
 
 

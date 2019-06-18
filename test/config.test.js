@@ -27,7 +27,7 @@ var haproxy_empty_error = path.resolve(__dirname, 'haproxy.cfg.empty');
 var haproxy_parse_error = path.resolve(__dirname, 'haproxy.cfg.parse-error');
 var haproxy_no_frontend = path.resolve(__dirname, 'haproxy.cfg.no-frontend');
 
-// Input file to use for writeHaproxyConfig and restart
+// Input file to use for writeHaproxyConfig and reload
 var haproxy_config_in = fs.readFileSync(path.resolve(__dirname,
                                                      'haproxy.cfg.in'),
                                         'utf8');
@@ -37,7 +37,7 @@ var updConfig_out = path.resolve(__dirname, 'haproxy.cfg.out');
 // File for the above to check against
 var updConfig_out_chk = path.resolve(__dirname, 'haproxy.cfg.out-check');
 
-// Files that the successful restart test will write out
+// Files that the successful reload test will write out
 var haproxy_file = path.resolve(__dirname, '../etc/haproxy.cfg');
 var haproxy_file_tmp = path.resolve(__dirname, '../etc/haproxy.cfg.tmp');
 
@@ -150,24 +150,24 @@ test('test writeHaproxyConfig bad config (should error)', function (t) {
     });
 });
 
-test('test restart', function (t) {
+test('test reload', function (t) {
     var opts = {
         trustedIP: '127.0.0.1',
         untrustedIPs: ['::1', '255.255.255.255'],
         // This must resolve, so pick something public
         hosts: ['google.com'],
-        restart: '/bin/true',
+        reload: '/bin/true',
         configFileIn: haproxy_config_in,
         log: helper.createLogger()
     };
 
-    lbm.restart(opts, function (err, data) {
+    lbm.reload(opts, function (err, data) {
         t.equal(null, err);
         t.doesNotThrow(function () {
-            // Check if restart created the proper file
+            // Check if reload created the proper file
             // this will throw if the file doesn't exist
             fs.statSync(haproxy_file);
-            // remove files that a successful restart
+            // remove files that a successful reload
             // would have created
             fs.unlinkSync(haproxy_file);
         });
@@ -175,28 +175,28 @@ test('test restart', function (t) {
     });
 });
 
-test('test restart bad config (should error)', function (t) {
+test('test reload bad config (should error)', function (t) {
     var opts = {
         trustedIP: '127.0.0.1',
         untrustedIPs: ['::1', '255.255.255.255'],
         hosts: [],
-        restart: '/bin/true',
+        reload: '/bin/true',
         configFileIn: haproxy_config_in,
         log: helper.createLogger()
     };
 
-    lbm.restart(opts, function (err, data) {
+    lbm.reload(opts, function (err, data) {
         t.notEqual(null, err);
         t.done();
     });
 });
 
-test('test dueling restarts', function (t) {
+test('test dueling reloads', function (t) {
     var opts = {
         trustedIP: '127.0.0.1',
         untrustedIPs: ['::1', '255.255.255.255'],
         hosts: ['google.com', 'joyent.com'],
-        restart: '/bin/sleep 2',
+        reload: '/bin/sleep 2',
         configFileIn: haproxy_config_in,
         log: helper.createLogger()
     };
@@ -206,19 +206,19 @@ test('test dueling restarts', function (t) {
         untrustedIPs: ['::1', '255.255.255.255'],
         // This must resolve, so pick something public
         hosts: ['google.com'],
-        restart: '/bin/true',
+        reload: '/bin/true',
         configFileIn: haproxy_config_in,
         log: helper.createLogger()
     };
 
-    // Restart twice, calling the functions as fast as possible
+    // Reload twice, calling the functions as fast as possible
     // Using a /bin/sleep call to make sure the first one is still
     // busy for the second call.
-    lbm.restart(opts, function (err, data) {
+    lbm.reload(opts, function (err, data) {
         t.equal(null, err);
     });
 
-    lbm.restart(opts2, function (err, data) {
+    lbm.reload(opts2, function (err, data) {
         t.equal(null, err);
         t.done();
     });

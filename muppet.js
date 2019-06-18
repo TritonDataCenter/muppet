@@ -222,20 +222,20 @@ function startWatch(opts, cb) {
                     untrustedIPs: cfg.untrustedIPs,
                     hosts: hosts || [],
                     log: cfg.log.child({component: 'lb_manager'}),
-                    restart: cfg.restart
+                    reload: cfg.reload
                 };
-                core.restartLB(_opts, function (err) {
+                core.reloadLB(_opts, function (err) {
                     if (err) {
                         cfg.log.error({
                             hosts: hosts,
                             err: err
-                        }, 'lb restart failed');
+                        }, 'lb config reload failed');
                         return;
                     }
 
                     cfg.log.info({
                         hosts: hosts
-                    }, 'lb restarted');
+                    }, 'lb config reloaded');
                 });
             });
 
