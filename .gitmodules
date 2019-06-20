@@ -13,7 +13,7 @@
 [submodule "deps/haproxy-1.8"]
 	path = deps/haproxy-1.8
 	url = https://github.com/joyent/haproxy-1.8.git
-	branch = joyent/dev-v1.8.8
+	branch = dev-v1.8.20
 [submodule "deps/eng"]
 	path = deps/eng
 	url = https://github.com/joyent/eng.git
