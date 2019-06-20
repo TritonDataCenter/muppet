@@ -7,7 +7,7 @@
 -->
 
 <!--
-    Copyright (c) 2014, Joyent, Inc.
+    Copyright 2019 Joyent, Inc.
 -->
 
 <service_bundle type="manifest" name="haproxy">
@@ -50,6 +50,8 @@
 		</method_environment>
 	    </method_context>
 	</exec_method>
+
+        <exec_method name='refresh' type='method' exec='/usr/bin/pkill -USR2 -z $(zonename) -u root haproxy' timeout_seconds='30'/>
 
 	<exec_method type="method"
 		     name="stop"
