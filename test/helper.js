@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2017, Joyent, Inc.
+ * Copyright 2019 Joyent, Inc.
  */
 
 /*jsl:ignore*/
@@ -15,9 +15,6 @@
 const bunyan = require('bunyan');
 const vasync = require('vasync');
 const zkstream = require('zkstream');
-
-const core = require('../lib');
-
 
 
 ///--- Helpers
@@ -34,30 +31,6 @@ function createLogger(name, stream) {
         });
         return (log);
 }
-
-
-function createZkClient(callback) {
-        const host = process.env.ZK_HOST || 'localhost';
-        var log = createLogger();
-        const port = process.env.ZK_PORT || 2181;
-
-        core.createZKClient({
-                log: log,
-                servers: [ {
-                        address: host,
-                        port: port
-                } ],
-                timeout: 100
-        }, function (_err, zk) {
-            zk.on('failed', function (err) {
-                callback(err);
-            });
-            zk.on('session', function () {
-                callback(null, zk);
-            });
-        });
-}
-
 
 
 ///--- Exports
@@ -103,7 +76,6 @@ module.exports = {
                 };
         },
 
-        createLogger: createLogger,
-        createZkClient: createZkClient
+        createLogger: createLogger
 
 };

@@ -5,7 +5,7 @@
 -->
 
 <!--
-    Copyright (c) 2014, Joyent, Inc.
+    Copyright 2019 Joyent, Inc.
 -->
 
 # muppet
@@ -26,17 +26,4 @@ Run `make prepush` before commits; otherwise, follow the
 
 # Testing
 
-## Prerequisites
-
-To properly run the muppet tests, the following package must be installed from
-pkgsrc:
-
-- haproxy
-
-Though the version of haproxy might differ from the running `loadbalancer` zone,
-it is simply used to check that haproxy can properly parse the resulting
-`haproxy.cfg` files generated in the tests.
-
-## Running the Tests
-
-Then to run the tests, simply run `make test`
+Run `make test`. The locally built haproxy is used as part of these tests.

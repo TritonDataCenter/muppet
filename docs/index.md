@@ -10,7 +10,7 @@ apisections:
 -->
 
 <!--
-    Copyright (c) 2014, Joyent, Inc.
+    Copyright 2019 Joyent, Inc.
 -->
 
 # tl;dr
@@ -27,9 +27,9 @@ can create a loadbalancer configuration (see below) that fronts your backend
 servers.
 
 In manta at least, all configuration of the load balancer is automatically
-managed by the muppet service, which watches for registrar changes in
-ZooKeeper.  This simply updates the upstream server list of IP addresses
-and restarts the loadbalancer service (not gracefully...).
+managed by the muppet service, which watches for registrar changes in ZooKeeper.
+This updates the upstream server list of IP addresses and refreshes the haproxy
+loadbalancer service.
 
 # Configuration
 
@@ -170,18 +170,18 @@ Run this command:
 
 ## Load Balancer
 
-The loadbalancer used is just [HAProxy](http://haproxy.1wt.eu/), but with a
-[patch from openwrt](https://dev.openwrt.org/) that lets us get the "real"
-client IP address into the `x-forwarded-for` header.  There is an
-`haproxy.cfg.in` file that is templated with a sparse number of `%s`; this
-file is used to generate a new haproxy.cfg each time the topology of online
-loadbalancers changes.
+The loadbalancer used is [HAProxy](http://www.haproxy.org/), but a [fork
+maintained by Joyent](https://github.com/joyent/haproxy-1.8), with a patch to
+use Event Ports. There is an `haproxy.cfg.in` file that is templated with a
+sparse number of `%s`; this file is used to generate a new haproxy.cfg each time
+the topology of online loadbalancers changes.
 
-*Important:* Checked into this repo is a "blank" haproxy.cfg - *DO NOT EDIT
-THIS FILE!*.  That file is used as a syntactically correct, but empty
-haproxy.cfg file that we use to bootstrap haproxy _before_ muppet is running.
-Any changes you want to see made to haproxy.cfg must be made in the template
-file, as that's what you really care about.
+*Important:* Checked into this repo is a "blank" haproxy.cfg.default - *DO NOT
+EDIT THIS FILE!*, except in the case you need the default behaviour to change.
+That file is used as a syntactically correct, but empty haproxy.cfg file that we
+use to bootstrap haproxy _before_ muppet is running.  Any changes you want to
+see made to haproxy.cfg must be made in the template file, as that's what you
+really care about.
 
 ## Muppet
 
