@@ -5,7 +5,7 @@
 #
 
 #
-# Copyright (c) 2019, Joyent, Inc.
+# Copyright 2019 Joyent, Inc.
 #
 
 #
@@ -45,12 +45,12 @@ SMF_MANIFESTS_IN = smf/manifests/$(NAME).xml.in smf/manifests/haproxy.xml.in smf
 # Variables
 #
 
-NODE_PREBUILT_TAG	= zone
-NODE_PREBUILT_VERSION   := v4.6.1
-NODE_PREBUILT_IMAGE     = 18b094b0-eb01-11e5-80c1-175dac7ddf02
+NODE_PREBUILT_VERSION=v6.17.0
+NODE_PREBUILT_TAG=zone64
+NODE_PREBUILT_IMAGE=c2c31b00-1d60-11e9-9a77-ff9f06554b0f
 
-ENGBLD_USE_BUILDIMAGE	= true
-ENGBLD_REQUIRE		:= $(shell git submodule update --init deps/eng)
+ENGBLD_USE_BUILDIMAGE = true
+ENGBLD_REQUIRE := $(shell git submodule update --init deps/eng)
 include ./deps/eng/tools/mk/Makefile.defs
 TOP ?= $(error Unable to access eng.git submodule Makefiles.)
 
@@ -72,7 +72,8 @@ RELEASE_TARBALL		:= muppet-pkg-$(STAMP).tar.gz
 ROOT			:= $(shell pwd)
 RELSTAGEDIR			:= /tmp/$(NAME)-$(STAMP)
 
-BASE_IMAGE_UUID = 04a48d7d-6bb5-4e83-8c3b-e60a99e0f48f
+# our base image is triton-origin-x86_64-18.4.0
+BASE_IMAGE_UUID = a9368831-958e-432d-a031-f8ce6768d190
 BUILDIMAGE_NAME = manta-loadbalancer
 BUILDIMAGE_DESC	= Manta loadbalancer
 BUILDIMAGE_PKGSRC = py27-curses openssl-1.0.2o stud-0.3p53nb5 libzookeeper-3.4.6
