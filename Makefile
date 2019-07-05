@@ -76,7 +76,7 @@ RELSTAGEDIR			:= /tmp/$(NAME)-$(STAMP)
 BASE_IMAGE_UUID = a9368831-958e-432d-a031-f8ce6768d190
 BUILDIMAGE_NAME = manta-loadbalancer
 BUILDIMAGE_DESC	= Manta loadbalancer
-BUILDIMAGE_PKGSRC = py27-curses openssl-1.0.2o stud-0.3p53nb5 libzookeeper-3.4.6
+BUILDIMAGE_PKGSRC = openssl-1.0.2p stud-0.3p53nb7
 AGENTS		= amon config registrar
 
 #
@@ -93,13 +93,9 @@ CLEAN_FILES += $(NODEUNIT) ./node_modules/nodeunit
 DISTCLEAN_FILES += ./node_modules
 
 .PHONY: test
-#
-# Unit tests
-# Right now we are ignoring the watch test until
-# it is back to a working state.
-#
+
 test: $(NODEUNIT)
-	$(NODEUNIT) test/config.test.js 2>&1 | $(BUNYAN)
+	$(NODEUNIT) test/*.test.js 2>&1 | $(BUNYAN)
 
 .PHONY: scripts
 scripts: deps/manta-scripts/.git
