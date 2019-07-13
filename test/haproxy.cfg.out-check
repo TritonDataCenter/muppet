@@ -33,14 +33,14 @@ defaults
 
 backend secure_api
         option httpchk GET /ping
-        server be0 foo.joyent.us:80 check inter 30s slowstart 10s
-        server be1 bar.joyent.us:80 check inter 30s slowstart 10s
+        server foo.joyent.us 127.0.0.1:80 check inter 30s slowstart 10s
+        server bar.joyent.us 127.0.0.2:80 check inter 30s slowstart 10s
 
 
 backend insecure_api
         option httpchk GET /ping
-        server be0 foo.joyent.us:81 check inter 30s slowstart 10s
-        server be1 bar.joyent.us:81 check inter 30s slowstart 10s
+        server foo.joyent.us 127.0.0.1:81 check inter 30s slowstart 10s
+        server bar.joyent.us 127.0.0.2:81 check inter 30s slowstart 10s
 
 
 backend haproxy-stats_http

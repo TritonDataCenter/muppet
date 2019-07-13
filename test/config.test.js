@@ -100,7 +100,10 @@ test('test writeHaproxyConfig', function (t) {
     var opts = {
         trustedIP: '127.0.0.1',
         untrustedIPs: ['::1', '255.255.255.255'],
-        hosts: ['foo.joyent.us', 'bar.joyent.us'],
+        servers: {
+	    'foo.joyent.us': { address: '127.0.0.1' },
+	    'bar.joyent.us': { address: '127.0.0.2' }
+	},
         configFileOut: updConfig_out,
         haproxyExec: haproxy_exec,
         log: helper.createLogger()
@@ -131,11 +134,11 @@ test('test writeHaproxyConfig', function (t) {
 });
 
 test('test writeHaproxyConfig bad config (should error)', function (t) {
-    // haproxy shouldn't like empty hosts (no listen or backend)
+    // haproxy shouldn't like empty servers
     var opts = {
         trustedIP: '',
         untrustedIPs: [],
-        hosts: [],
+        servers: {},
         configFileOut: updConfig_out,
         configFileIn: haproxy_config_in,
         haproxyExec: haproxy_exec,
@@ -156,7 +159,7 @@ test('test reload', function (t) {
         trustedIP: '127.0.0.1',
         untrustedIPs: ['::1', '255.255.255.255'],
         // This must resolve, so pick something public
-        hosts: ['google.com'],
+        servers: { 'google.com': { 'address': '8.8.8.8' } },
         reload: '/bin/true',
         configFileIn: haproxy_config_in,
         haproxyExec: haproxy_exec,
@@ -181,7 +184,7 @@ test('test reload bad config (should error)', function (t) {
     var opts = {
         trustedIP: '127.0.0.1',
         untrustedIPs: ['::1', '255.255.255.255'],
-        hosts: [],
+        servers: {},
         reload: '/bin/true',
         configFileIn: haproxy_config_in,
         haproxyExec: haproxy_exec,
@@ -198,7 +201,10 @@ test('test dueling reloads', function (t) {
     var opts = {
         trustedIP: '127.0.0.1',
         untrustedIPs: ['::1', '255.255.255.255'],
-        hosts: ['google.com', 'joyent.com'],
+        servers: {
+            'google.com': { 'address': '8.8.8.8' },
+            'google2.com': { 'address': '8.8.4.4' }
+        },
         reload: '/bin/sleep 2',
         configFileIn: haproxy_config_in,
         haproxyExec: haproxy_exec,
@@ -209,7 +215,7 @@ test('test dueling reloads', function (t) {
         trustedIP: '127.0.0.1',
         untrustedIPs: ['::1', '255.255.255.255'],
         // This must resolve, so pick something public
-        hosts: ['google.com'],
+        servers: { 'google.com': { 'address': '8.8.8.8' } },
         reload: '/bin/true',
         configFileIn: haproxy_config_in,
         haproxyExec: haproxy_exec,
