@@ -13,9 +13,10 @@ var lbm = require('../lib/lb_manager.js');
 var path = require('path');
 var fs = require('fs');
 var jsdiff = require('diff');
+var tap = require('tap');
 
 ///--- Globals
-var test = helper.test;
+//var test = helper.test;
 var log = helper.createLogger();
 
 // The good file to test against
@@ -46,7 +47,7 @@ var haproxy_exec = path.resolve(__dirname, '../deps/haproxy-1.8/haproxy');
 
 ///--- Tests
 
-test('test good config file', function (t) {
+tap.test('test good config file', function (t) {
     var opts = { log: helper.createLogger(),
         haproxyExec: haproxy_exec,
         configFileOut: haproxy_good};
@@ -56,7 +57,7 @@ test('test good config file', function (t) {
     });
 });
 
-test('test no-listener config file (should error)', function (t) {
+tap.test('test no-listener config file (should error)', function (t) {
     var opts = { log: helper.createLogger(),
         haproxyExec: haproxy_exec,
         configFileOut: haproxy_no_listener};
@@ -66,7 +67,7 @@ test('test no-listener config file (should error)', function (t) {
     });
 });
 
-test('test empty config file (should error)', function (t) {
+tap.test('test empty config file (should error)', function (t) {
     var opts = { log: helper.createLogger(),
         haproxyExec: haproxy_exec,
         configFileOut: haproxy_empty_error};
@@ -76,7 +77,7 @@ test('test empty config file (should error)', function (t) {
     });
 });
 
-test('test parse error config file (should error)', function (t) {
+tap.test('test parse error config file (should error)', function (t) {
     var opts = { log: helper.createLogger(),
         haproxyExec: haproxy_exec,
         configFileOut: haproxy_parse_error};
@@ -86,7 +87,7 @@ test('test parse error config file (should error)', function (t) {
     });
 });
 
-test('test no-frontend config file (should error)', function (t) {
+tap.test('test no-frontend config file (should error)', function (t) {
     var opts = { log: helper.createLogger(),
         haproxyExec: haproxy_exec,
         configFileOut: haproxy_no_frontend};
@@ -96,7 +97,7 @@ test('test no-frontend config file (should error)', function (t) {
     });
 });
 
-test('test writeHaproxyConfig', function (t) {
+tap.test('test writeHaproxyConfig', function (t) {
     var opts = {
         trustedIP: '127.0.0.1',
         untrustedIPs: ['::1', '255.255.255.255'],
@@ -130,7 +131,7 @@ test('test writeHaproxyConfig', function (t) {
     });
 });
 
-test('test writeHaproxyConfig bad config (should error)', function (t) {
+tap.test('test writeHaproxyConfig bad config (should error)', function (t) {
     // haproxy shouldn't like empty hosts (no listen or backend)
     var opts = {
         trustedIP: '',
@@ -151,7 +152,7 @@ test('test writeHaproxyConfig bad config (should error)', function (t) {
     });
 });
 
-test('test reload', function (t) {
+tap.test('test reload', function (t) {
     var opts = {
         trustedIP: '127.0.0.1',
         untrustedIPs: ['::1', '255.255.255.255'],
@@ -177,7 +178,7 @@ test('test reload', function (t) {
     });
 });
 
-test('test reload bad config (should error)', function (t) {
+tap.test('test reload bad config (should error)', function (t) {
     var opts = {
         trustedIP: '127.0.0.1',
         untrustedIPs: ['::1', '255.255.255.255'],
@@ -194,7 +195,7 @@ test('test reload bad config (should error)', function (t) {
     });
 });
 
-test('test dueling reloads', function (t) {
+tap.test('test dueling reloads', function (t) {
     var opts = {
         trustedIP: '127.0.0.1',
         untrustedIPs: ['::1', '255.255.255.255'],

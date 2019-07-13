@@ -13,9 +13,7 @@
 /*jsl:end*/
 
 const bunyan = require('bunyan');
-const vasync = require('vasync');
-const zkstream = require('zkstream');
-
+const tap = require('tap');
 
 ///--- Helpers
 
