@@ -7,11 +7,11 @@
 /*
  * Copyright 2019 Joyent, Inc.
  */
-var vasync = require('vasync');
+
 var helper = require('./helper.js');
+var tap = require('tap');
 var watch = require('../lib/watch.js');
 
-var test = helper.test;
 var log = helper.createLogger();
 
 function MockZookeeper() {
@@ -26,7 +26,7 @@ MockZookeeper.prototype.isConnected = function () {
     return (true);
 };
 
-test('test FIXME', function (t) {
+tap.test('test FIXME', function (t) {
     var zk = new MockZookeeper();
     var watcher = new watch.ServerWatcherFSM({
         zk: zk,

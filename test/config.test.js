@@ -168,7 +168,7 @@ tap.test('test reload', function (t) {
     };
 
     lbm.reload(opts, function (err, data) {
-        t.equal(null, err);
+        t.equal(undefined, err);
         t.doesNotThrow(function () {
             // Check if reload created the proper file
             // this will throw if the file doesn't exist
@@ -231,7 +231,7 @@ tap.test('test dueling reloads', function (t) {
     });
 
     lbm.reload(opts2, function (err, data) {
-        t.equal(null, err);
+        t.equal(undefined, err);
         t.done();
     });
 });
