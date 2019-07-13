@@ -28,7 +28,7 @@ NAME		:= muppet
 # Tools
 #
 BUNYAN		:= ./node_modules/.bin/bunyan
-NODEUNIT	:= ./node_modules/.bin/nodeunit
+TAP_EXEC	:= ./node_modules/.bin/tap
 
 #
 # Files
@@ -83,19 +83,19 @@ AGENTS		= amon config registrar
 # Repo-specific targets
 #
 .PHONY: all
-all: $(SMF_MANIFESTS) | $(NODEUNIT) $(REPO_DEPS) $(HAPROXY_EXEC) scripts
+all: $(SMF_MANIFESTS) | $(TAP_EXEC) $(REPO_DEPS) $(HAPROXY_EXEC) scripts
 	$(NPM) install
 
-$(NODEUNIT): | $(NPM_EXEC)
+$(TAP_EXEC): | $(NPM_EXEC)
 	$(NPM) install
 
-CLEAN_FILES += $(NODEUNIT) ./node_modules/nodeunit
+CLEAN_FILES += $(TAP_EXEC)
 DISTCLEAN_FILES += ./node_modules
 
 .PHONY: test
 
-test: $(NODEUNIT)
-	$(NODEUNIT) test/*.test.js 2>&1 | $(BUNYAN)
+test: $(TAP_EXEC)
+	$(TAP_EXEC) test/*.test.js
 
 .PHONY: scripts
 scripts: deps/manta-scripts/.git

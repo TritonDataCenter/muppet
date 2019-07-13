@@ -20,11 +20,8 @@
     "zkstream": "0.11.8"
   },
   "devDependencies": {
-    "nodeunit": "0.11.2",
+    "tap": "12.6.1",
     "diff": "4.0.1"
-  },
-  "scripts": {
-    "start": "node ./muppet.js"
   },
   "sdcDependencies": {
     "config-agent": ">=1.2.0"
