@@ -28,7 +28,6 @@ NAME		:= muppet
 # Tools
 #
 BUNYAN		:= ./node_modules/.bin/bunyan
-TAP_EXEC	:= ./node_modules/.bin/tap
 
 #
 # Files
@@ -64,10 +63,6 @@ include ./deps/eng/tools/mk/Makefile.smf.defs
 #
 PATH	:= $(NODE_INSTALL)/bin:${PATH}
 
-#
-# MG Variables
-#
-
 RELEASE_TARBALL		:= muppet-pkg-$(STAMP).tar.gz
 ROOT			:= $(shell pwd)
 RELSTAGEDIR			:= /tmp/$(NAME)-$(STAMP)
@@ -83,19 +78,17 @@ AGENTS		= amon config registrar
 # Repo-specific targets
 #
 .PHONY: all
-all: $(SMF_MANIFESTS) | $(TAP_EXEC) $(REPO_DEPS) $(HAPROXY_EXEC) scripts
+all: $(SMF_MANIFESTS) | $(NPM_EXEC) $(REPO_DEPS) $(HAPROXY_EXEC) scripts
 	$(NPM) install
 
-$(TAP_EXEC): | $(NPM_EXEC)
-	$(NPM) install
-
-CLEAN_FILES += $(TAP_EXEC)
 DISTCLEAN_FILES += ./node_modules
 
 .PHONY: test
 
-test: $(TAP_EXEC)
-	$(TAP_EXEC) test/*.test.js
+test: all
+	for test in test/*test.js; do \
+		$(NODE_INSTALL)/bin/node $$test 2>&1 | $(BUNYAN) ; \
+	done
 
 .PHONY: scripts
 scripts: deps/manta-scripts/.git

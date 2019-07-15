@@ -35,25 +35,30 @@ tap.test('test collecting serversChanged', function (t) {
         log: log
     });
 
+    watcher.sw_smearTime = 0;
+    watcher.sw_collectionTimeout = 500;
+    zk.res['/c1'] = JSON.stringify({
+        type: 'host', host: { address: '127.0.0.1' }
+    });
+    zk.res['/c2'] = JSON.stringify({
+        type: 'host', host: { address: '127.0.0.2' }
+    });
+
     watcher.on('serversChanged', function (servers) {
         t.equal(servers['c1'].address, '127.0.0.1');
         t.equal(servers['c2'].address, '127.0.0.2');
         t.done();
     });
 
-    zk.res['/c1'] = JSON.stringify({
-	type: 'host', host: { address: '127.0.0.1' } });
-    zk.res['/c2'] = JSON.stringify({
-	type: 'host', host: { address: '127.0.0.2' } });
 
     watcher.childrenChanged(['c1']);
 
     setTimeout(function () {
-	watcher.childrenChanged(['c1', 'c2', 'c3']);
+        watcher.childrenChanged(['c1', 'c2', 'c3']);
         setTimeout(function () {
             watcher.childrenChanged(['c1', 'c2']);
-        }, 1000);
-    }, 1000);
+        }, 100);
+    }, 100);
 });
 
 // FIXME: no net change
@@ -71,5 +76,3 @@ tap.test('test collecting serversChanged', function (t) {
 // FIXME: get NO_NODE handling
 
 // FIXME: get other ZK error handling + re-connect
-
-// vim: set softtabstop=4 shiftwidth=4:

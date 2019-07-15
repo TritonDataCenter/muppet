@@ -102,9 +102,9 @@ tap.test('test writeHaproxyConfig', function (t) {
         trustedIP: '127.0.0.1',
         untrustedIPs: ['::1', '255.255.255.255'],
         servers: {
-	    'foo.joyent.us': { address: '127.0.0.1' },
-	    'bar.joyent.us': { address: '127.0.0.2' }
-	},
+            'foo.joyent.us': { address: '127.0.0.1' },
+            'bar.joyent.us': { address: '127.0.0.2' }
+        },
         configFileOut: updConfig_out,
         haproxyExec: haproxy_exec,
         log: helper.createLogger()
