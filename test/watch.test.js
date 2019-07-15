@@ -16,6 +16,7 @@ var log = helper.createLogger();
 
 function MockZookeeper() {
     this.res = {};
+    this.connected = true;
 }
 
 MockZookeeper.prototype.get = function (path, cb) {
@@ -23,10 +24,10 @@ MockZookeeper.prototype.get = function (path, cb) {
 };
 
 MockZookeeper.prototype.isConnected = function () {
-    return (true);
+    return (this.connected);
 };
 
-tap.test('test FIXME', function (t) {
+tap.test('test collecting serversChanged', function (t) {
     var zk = new MockZookeeper();
     var watcher = new watch.ServerWatcherFSM({
         zk: zk,
@@ -35,7 +36,8 @@ tap.test('test FIXME', function (t) {
     });
 
     watcher.on('serversChanged', function (servers) {
-        console.log(servers);
+        t.equal(servers['c1'].address, '127.0.0.1');
+        t.equal(servers['c2'].address, '127.0.0.2');
         t.done();
     });
 
@@ -44,9 +46,30 @@ tap.test('test FIXME', function (t) {
     zk.res['/c2'] = JSON.stringify({
 	type: 'host', host: { address: '127.0.0.2' } });
 
-    console.log('here');
-    watcher.childrenChanged(['c1', 'c2']);
+    watcher.childrenChanged(['c1']);
 
+    setTimeout(function () {
+	watcher.childrenChanged(['c1', 'c2', 'c3']);
+        setTimeout(function () {
+            watcher.childrenChanged(['c1', 'c2']);
+        }, 1000);
+    }, 1000);
 });
+
+// FIXME: no net change
+
+// FIXME: children non-host nodes are ignored
+
+// FIXME: percentage threshold removal check
+
+// FIXME: threshold throttle check
+
+// FIXME: test hold time
+
+// FIXME: check remove in oldest order
+
+// FIXME: get NO_NODE handling
+
+// FIXME: get other ZK error handling + re-connect
 
 // vim: set softtabstop=4 shiftwidth=4:
