@@ -22,10 +22,15 @@ const SMEAR = 0;
 
 function MockZookeeper() {
     this.res = {};
+    this.res_no_node = {};
     this.connected = true;
 }
 
 MockZookeeper.prototype.get = function (path, cb) {
+    if (this.res_no_node[path]) {
+            cb({ name: 'ZKError', code: 'NO_NODE'});
+            return;
+    }
     cb(null, this.res[path]);
 };
 
@@ -176,14 +181,94 @@ tap.test('test non-host children', function (t) {
     watcher.childrenChanged(['c1', 'c2']);
 });
 
-// FIXME: percentage threshold removal check
+tap.test('test NO_NODE response', function (t) {
+    var watcher = setup();
 
-// FIXME: threshold throttle check
+    watcher.sw_zk.res['/c1'] = JSON.stringify({
+        type: 'host', host: { address: '127.0.0.1' }
+    });
+    watcher.sw_zk.res_no_node['c2'] = true;
 
-// FIXME: test hold time
+    t.comment('adding c1, NO_NODE c2');
+    watcher.childrenChanged(['c1', 'c2']);
 
-// FIXME: check remove in oldest order
+    watcher.on('serversChanged', function (servers) {
+        t.equal(servers['c1'].address, '127.0.0.1');
+        t.notOk(servers['c2']);
+        t.done();
+    });
+});
 
-// FIXME: get NO_NODE handling
+tap.test('test removal throttle', function (t) {
+    var watcher = setup();
 
+    watcher.sw_zk.res['/c1'] = JSON.stringify({
+        type: 'host', host: { address: '127.0.0.1' }
+    });
+    watcher.sw_zk.res['/c2'] = JSON.stringify({
+        type: 'host', host: { address: '127.0.0.2' }
+    });
+    watcher.sw_zk.res['/c3'] = JSON.stringify({
+        type: 'host', host: { address: '127.0.0.3' }
+    });
+    watcher.sw_zk.res['/c4'] = JSON.stringify({
+        type: 'host', host: { address: '127.0.0.4' }
+    });
+    watcher.sw_zk.res['/c5'] = JSON.stringify({
+        type: 'host', host: { address: '127.0.0.5' }
+    });
+    watcher.sw_zk.res['/c5'] = JSON.stringify({
+        type: 'host', host: { address: '127.0.0.5' }
+    });
+    watcher.sw_zk.res['/c6'] = JSON.stringify({
+        type: 'host', host: { address: '127.0.0.6' }
+    });
+    watcher.sw_zk.res['/c7'] = JSON.stringify({
+        type: 'host', host: { address: '127.0.0.7' }
+    });
+    watcher.sw_zk.res['/c8'] = JSON.stringify({
+        type: 'host', host: { address: '127.0.0.8' }
+    });
+    watcher.sw_zk.res['/c9'] = JSON.stringify({
+        type: 'host', host: { address: '127.0.0.9' }
+    });
+    watcher.sw_zk.res['/ca'] = JSON.stringify({
+        type: 'host', host: { address: '127.0.0.10' }
+    });
+
+    t.comment('adding c1-ca');
+    watcher.childrenChanged(['c1', 'c2', 'c3', 'c4', 'c5',
+        'c6', 'c7', 'c8', 'c9', 'ca']);
+
+    // NB: this is relying on removal sort ordering by name
+    var expect = [
+        [ 'c1', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'ca' ],
+        [ 'c1', 'c6', 'c7', 'c8', 'c9', 'ca' ],
+        [ 'c1', 'c8', 'c9', 'ca' ],
+        [ 'c1', 'c9', 'ca' ],
+        [ 'c1', 'ca' ],
+        [ 'c1' ]
+    ];
+
+    var count = 0;
+
+    setTimeout(function () {
+        watcher.on('serversChanged', function (servers) {
+            t.comment('checking server list is expected');
+            expect[count].forEach(function (s) {
+                t.ok(servers[s]);
+            });
+
+            count += 1;
+            if (count === expect.length)
+                t.done();
+        });
+
+        t.comment('removing c2-ca');
+        watcher.childrenChanged(['c1']);
+
+    }, COLLECTION_TIMEOUT + 300);
+});
+
+// FIXME: test lastseen ordering for removal
 // FIXME: get other ZK error handling + re-connect
