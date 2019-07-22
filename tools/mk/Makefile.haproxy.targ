@@ -6,16 +6,17 @@
 #
 
 #
-# Copyright (c) 2017, Joyent, Inc.
+# Copyright 2019 Joyent, Inc.
 #
 
 #
 # Makefile.haproxy.targ: building and shipping a private haproxy
 #
 
+BUILDFLAGS = -j8 TARGET=solaris CFLAGS=-D_XPG6
 $(HAPROXY_EXEC): $(HAPROXY_SRC)/.git
 	cd $(HAPROXY_SRC) && \
-	    $(MAKE) -j8 TARGET=solaris && \
+	    $(MAKE) $(BUILDFLAGS) && \
 	    $(MAKE) install PREFIX=$(TOP)/$(HAPROXY_INSTALL)
 
 DISTCLEAN_FILES += $(HAPROXY_INSTALL)
