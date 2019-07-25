@@ -1,45 +1,61 @@
+#
+# close to a real haproxy.cfg, but modified so it can be run on a build machine
+# as a non-root user
+#
+
 global
-	log 127.0.0.1 local0
-	# run as the user doing 'make test', so extra perms aren't needed
-	#user nobody
-	#group nobody
-	daemon
-	maxconn 2048
-	pidfile /tmp/haproxy.pid.test
-	stats socket /tmp/haproxy mode 0600 level admin
+        # have haproxy launch a worker process, SMF monitors the master, part of
+        # seamless config reload (via SMF refresh method)
+        master-worker
+        # maximum of 10 reloads before killing old workers
+        mworker-max-reloads 10
+        # haproxy auto-sizing is not implemented on illumos
+        nbthread 20
+        log 127.0.0.1 local0
+        # user nobody
+        # group nobody
+        daemon
+        maxconn 1024
+        pidfile /tmp/haproxy.pid.test
+        log-send-hostname testhost
+        # expose-fd listeners also required for seamless config reload
+        stats socket /tmp/haproxy mode 0600 level admin expose-fd listeners
+        tune.ssl.default-dh-param 2048
+        ssl-default-bind-options ssl-min-ver TLSv1.2 no-tls-tickets
+
+        # intermediate config from https://ssl-config.mozilla.org/, plus
+        # the last four to match java-manta's cipher list
+        ssl-default-bind-ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-SHA:AES128-GCM-SHA256:AES256-SHA256:AES128-SHA256
 
 defaults
-	balance leastconn
-	log     global
-	maxconn 2048
-	mode http
-	option forwardfor
-	option http-tunnel
-	option httplog
-	option redispatch
-	no option httpclose
-	no option http-server-close
-	retries 3
-	timeout connect 500
-	timeout client  120000
-	timeout server  240000
-
-frontend https
-	bind 127.0.0.1:6600 accept-proxy
-	default_backend secure_api
-	reqadd x-secure:\ true
+        balance leastconn
+        log     global
+        maxconn 65535
+        mode http
+        option forwardfor
+        option httplog
+        option redispatch
+        no option httpclose
+        no option http-server-close
+        retries 3
+        timeout client  120000
+        timeout connect 2000
+        timeout server  240000
 
 backend secure_api
-	option httpchk GET /ping
-	server 4afa9ff4-d918-42ed-9972-9ac20b7cf869:6780 127.0.0.1:6780 check inter 1s slowstart 10s
-	server 5c679a71-9ef7-4079-9a4c-45c9f5b97d45:6781 127.0.0.1:6781 check inter 1s slowstart 10s
-
-
-frontend http
-	bind 127.0.0.1:6700
-	default_backend insecure_api
+        option httpchk GET /ping
+        server 4afa9ff4-d918-42ed-9972-9ac20b7cf869:6780 127.0.0.1:6780 check inter 1s slowstart 10s
+        server 5c679a71-9ef7-4079-9a4c-45c9f5b97d45:6781 127.0.0.1:6781 check inter 1s slowstart 10s
 
 backend insecure_api
-	option httpchk GET /ping
-	server 4afa9ff4-d918-42ed-9972-9ac20b7cf869:6780 127.0.0.1:6780 check inter 1s slowstart 10s
-	server 5c679a71-9ef7-4079-9a4c-45c9f5b97d45:6781 127.0.0.1:6781 check inter 1s slowstart 10s
+        option httpchk GET /ping
+        server 4afa9ff4-d918-42ed-9972-9ac20b7cf869:6780 127.0.0.1:6780 check inter 1s slowstart 10s
+        server 5c679a71-9ef7-4079-9a4c-45c9f5b97d45:6781 127.0.0.1:6781 check inter 1s slowstart 10s
+
+frontend https
+        default_backend secure_api
+        bind 127.0.0.1:6443 ssl crt /tmp/haproxy.test.pem
+
+frontend http
+       bind 127.0.0.1:6080
+       default_backend insecure_api
