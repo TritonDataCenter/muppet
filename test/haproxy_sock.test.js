@@ -31,8 +31,9 @@ tap.test('haproxy_sock.serverStats', function (t) {
         t.notOk(err);
 
         stats.forEach(function (srv) {
-            t.match(srv.pxname, /insecure_api|secure_api/, 'pxname is valid');
-            t.match(srv.addr, /127\.0\.0\.1:6[0-9]{3}/, 'addr is valid');
+            t.match(srv.pxname, /buckets_api|insecure_api|secure_api/,
+                'pxname is valid');
+            t.match(srv.addr, /127\.0\.0\.1:[0-9]{4}/, 'addr is valid');
             t.equal(srv.act, '1', 'act is 1');
             // no server behind these, so DOWN
             t.equal(srv.status, 'DOWN', 'status is DOWN');
@@ -44,8 +45,18 @@ tap.test('haproxy_sock.serverStats', function (t) {
 
 tap.test('haproxy_sock.syncServerState 1', function (t) {
     const servers = {
-        '4afa9ff4-d918-42ed-9972-9ac20b7cf869': { 'enabled': true },
-        '5c679a71-9ef7-4079-9a4c-45c9f5b97d45': { 'enabled': true }
+        '4afa9ff4-d918-42ed-9972-9ac20b7cf869': {
+            kind: 'webapi',
+            enabled: true
+        },
+        '5c679a71-9ef7-4079-9a4c-45c9f5b97d45': {
+            kind: 'webapi',
+            enabled: true
+        },
+        'cdf37eb6-090a-4e68-8282-90e99c6bb04d': {
+            kind: 'buckets-api',
+            enabled: 'true'
+        }
     };
 
     haproxy_sock.syncServerState({ log: log, servers: servers },
@@ -56,9 +67,9 @@ tap.test('haproxy_sock.syncServerState 1', function (t) {
             t.notOk(err2);
 
             stats.forEach(function (srv) {
-                t.match(srv.pxname, /insecure_api|secure_api/,
+                t.match(srv.pxname, /buckets_api|insecure_api|secure_api/,
                     'pxname is valid');
-                t.match(srv.addr, /127\.0\.0\.1:6[0-9]{3}/, 'addr is valid');
+                t.match(srv.addr, /127\.0\.0\.1:[0-9]{4}/, 'addr is valid');
                 t.equal(srv.act, '1', 'act is 1');
                 // no server behind these, so DOWN
                 t.equal(srv.status, 'DOWN', 'status is DOWN');
@@ -71,9 +82,16 @@ tap.test('haproxy_sock.syncServerState 1', function (t) {
 
 tap.test('haproxy_sock.syncServerState 2', function (t) {
     const servers = {
-        '4afa9ff4-d918-42ed-9972-9ac20b7cf869': { 'enabled': true }
+        '4afa9ff4-d918-42ed-9972-9ac20b7cf869': {
+            kind: 'webapi',
+            enabled: true
+        },
+        'cdf37eb6-090a-4e68-8282-90e99c6bb04d': {
+            kind: 'buckets-api',
+            enabled: 'true'
+        }
         // intentionally missing
-        // '5c679a71-9ef7-4079-9a4c-45c9f5b97d45': { 'enabled': true }
+        // '5c679a71-9ef7-4079-9a4c-45c9f5b97d45'
     };
 
     haproxy_sock.syncServerState({ log: log, servers: servers },
@@ -87,8 +105,18 @@ tap.test('haproxy_sock.syncServerState 2', function (t) {
 
 tap.test('haproxy_sock.syncServerState 3', function (t) {
     const servers = {
-        '4afa9ff4-d918-42ed-9972-9ac20b7cf869': { 'enabled': true },
-        '5c679a71-9ef7-4079-9a4c-45c9f5b97d45': { 'enabled': false }
+        '4afa9ff4-d918-42ed-9972-9ac20b7cf869': {
+            kind: 'webapi',
+            enabled: true
+        },
+        '5c679a71-9ef7-4079-9a4c-45c9f5b97d45': {
+            kind: 'webapi',
+            enabled: false
+        },
+        'cdf37eb6-090a-4e68-8282-90e99c6bb04d': {
+            kind: 'buckets-api',
+            enabled: false
+        }
     };
 
     haproxy_sock.syncServerState({ log: log, servers: servers },
@@ -99,9 +127,9 @@ tap.test('haproxy_sock.syncServerState 3', function (t) {
             t.notOk(err2);
 
             stats.forEach(function (srv) {
-                t.match(srv.pxname, /insecure_api|secure_api/,
+                t.match(srv.pxname, /buckets_api|insecure_api|secure_api/,
                     'pxname is valid');
-                t.match(srv.addr, /127\.0\.0\.1:6[0-9]{3}/, 'addr is valid');
+                t.match(srv.addr, /127\.0\.0\.1:[0-9]{4}/, 'addr is valid');
                 t.equal(srv.act, '1', 'act is 1');
 
                 switch (srv.svname) {
@@ -110,6 +138,7 @@ tap.test('haproxy_sock.syncServerState 3', function (t) {
                     t.equal(srv.status, 'DOWN', 'status is DOWN');
                     break;
 
+                case 'cdf37eb6-090a-4e68-8282-90e99c6bb04d:8081':
                 case '5c679a71-9ef7-4079-9a4c-45c9f5b97d45:6781':
                     t.equal(srv.status, 'MAINT', 'status is MAINT');
                     break;
@@ -136,14 +165,18 @@ function reEnableServer(t, servers) {
             t.notOk(err2);
 
             stats.forEach(function (srv) {
-                t.match(srv.pxname, /insecure_api|secure_api/,
+                t.match(srv.pxname, /buckets_api|insecure_api|secure_api/,
                     'pxname is valid');
-                t.match(srv.addr, /127\.0\.0\.1:6[0-9]{3}/, 'addr is valid');
+                t.match(srv.addr, /127\.0\.0\.1:[0-9]{4}/, 'addr is valid');
                 t.equal(srv.act, '1', 'act is 1');
                 switch (srv.svname) {
                 case '4afa9ff4-d918-42ed-9972-9ac20b7cf869:6780':
                     // no server behind these, so DOWN
                     t.equal(srv.status, 'DOWN', 'status is DOWN');
+                    break;
+
+                case 'cdf37eb6-090a-4e68-8282-90e99c6bb04d:8081':
+                    t.equal(srv.status, 'MAINT', 'status is MAINT');
                     break;
 
                 case '5c679a71-9ef7-4079-9a4c-45c9f5b97d45:6781':

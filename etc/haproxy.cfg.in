@@ -2,8 +2,10 @@ global
         # have haproxy launch a worker process, SMF monitors the master, part of
         # seamless config reload (via SMF refresh method)
         master-worker
-        # maximum of 10 kept-open child processes after reload
-        max-old-workers 10
+        # maximum of 10 reloads before killing old workers
+        mworker-max-reloads 10
+        # haproxy auto-sizing is not implemented on illumos
+        nbthread 20
         log 127.0.0.1 local0
         user nobody
         group nobody
@@ -13,7 +15,12 @@ global
         log-send-hostname %s
         # expose-fd listeners also required for seamless config reload
         stats socket /tmp/haproxy mode 0600 level admin expose-fd listeners
+        tune.ssl.default-dh-param 2048
+        ssl-default-bind-options ssl-min-ver TLSv1.2 no-tls-tickets
 
+        # intermediate config from https://ssl-config.mozilla.org/, plus
+        # the last four to match java-manta's cipher list
+        ssl-default-bind-ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-SHA:AES128-GCM-SHA256:AES256-SHA256:AES128-SHA256
 
 defaults
         balance leastconn
@@ -21,7 +28,6 @@ defaults
         maxconn 65535
         mode http
         option forwardfor
-        option http-tunnel
         option httplog
         option redispatch
         no option httpclose
@@ -37,6 +43,10 @@ defaults
         errorfile 503 /opt/smartdc/muppet/etc/503.http
         errorfile 504 /opt/smartdc/muppet/etc/503.http
 
+backend buckets_api
+        option httpchk GET /ping
+%s
+
 backend secure_api
         option httpchk GET /ping
 %s
@@ -51,16 +61,17 @@ backend haproxy-stats_http
         stats uri /
 
 frontend https
-        bind 127.0.0.1:8443 accept-proxy
+        acl acl_bucket path_reg ^/[^/]+/buckets
+        use_backend buckets_api if acl_bucket
         default_backend secure_api
+        bind *:443 ssl crt /opt/smartdc/muppet/etc/ssl.pem
 
 %s
 
 frontend http_internal
-        bind %s:80
         default_backend secure_api
-
+        bind %s:80
 
 frontend stats_http
-         bind %s:8080
-         default_backend haproxy-stats_http
+        default_backend haproxy-stats_http
+        bind %s:8080

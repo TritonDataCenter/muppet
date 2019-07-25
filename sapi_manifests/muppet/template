@@ -1,5 +1,5 @@
 {
-  "name": "manta.{{REGION}}.{{DNS_DOMAIN}}",
+  "domain": "{{REGION}}.{{DNS_DOMAIN}}",
   "trustedIP": "{{auto.MANTA_IP}}",
   "adminIPS":  "{{auto.ADMIN_IPS}}",
   "mantaIPS":  "{{auto.MANTA_IPS}}",
