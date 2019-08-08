@@ -28,7 +28,7 @@ NAME		:= muppet
 # Tools
 #
 BUNYAN		:= ./node_modules/.bin/bunyan
-NODEUNIT	:= ./node_modules/.bin/nodeunit
+TAP_EXEC	:= ./node_modules/.bin/tap
 
 #
 # Files
@@ -64,10 +64,6 @@ include ./deps/eng/tools/mk/Makefile.smf.defs
 #
 PATH	:= $(NODE_INSTALL)/bin:${PATH}
 
-#
-# MG Variables
-#
-
 RELEASE_TARBALL		:= muppet-pkg-$(STAMP).tar.gz
 ROOT			:= $(shell pwd)
 RELSTAGEDIR			:= /tmp/$(NAME)-$(STAMP)
@@ -83,19 +79,16 @@ AGENTS		= amon config registrar
 # Repo-specific targets
 #
 .PHONY: all
-all: $(SMF_MANIFESTS) | $(NODEUNIT) $(REPO_DEPS) $(HAPROXY_EXEC) scripts
+all $(TAP_EXEC): $(SMF_MANIFESTS) | $(NPM_EXEC) $(REPO_DEPS) $(HAPROXY_EXEC) scripts
 	$(NPM) install
 
-$(NODEUNIT): | $(NPM_EXEC)
-	$(NPM) install
-
-CLEAN_FILES += $(NODEUNIT) ./node_modules/nodeunit
 DISTCLEAN_FILES += ./node_modules
 
 .PHONY: test
 
-test: $(NODEUNIT)
-	$(NODEUNIT) test/*.test.js 2>&1 | $(BUNYAN)
+# need to sed out leading whitespace for bunyan to trigger
+test: $(TAP_EXEC)
+	$(TAP_EXEC) --strict -T 60 test/*.test.js | sed 's+^    {+{+' | bunyan
 
 .PHONY: scripts
 scripts: deps/manta-scripts/.git

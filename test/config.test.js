@@ -7,15 +7,15 @@
 /*
  * Copyright 2019 Joyent, Inc.
  */
-var vasync = require('vasync');
+var fs = require('fs');
 var helper = require('./helper.js');
+var jsdiff = require('diff');
 var lbm = require('../lib/lb_manager.js');
 var path = require('path');
-var fs = require('fs');
-var jsdiff = require('diff');
+var tap = require('tap');
+var vasync = require('vasync');
 
 ///--- Globals
-var test = helper.test;
 var log = helper.createLogger();
 
 // The good file to test against
@@ -27,15 +27,14 @@ var haproxy_empty_error = path.resolve(__dirname, 'haproxy.cfg.empty');
 var haproxy_parse_error = path.resolve(__dirname, 'haproxy.cfg.parse-error');
 var haproxy_no_frontend = path.resolve(__dirname, 'haproxy.cfg.no-frontend');
 
-// Input file to use for writeHaproxyConfig and reload
-var haproxy_config_in = fs.readFileSync(path.resolve(__dirname,
-                                                     'haproxy.cfg.in'),
-                                        'utf8');
-
 // File for writeHaproxyConfig to write out
 var updConfig_out = path.resolve(__dirname, 'haproxy.cfg.out');
 // File for the above to check against
 var updConfig_out_chk = path.resolve(__dirname, 'haproxy.cfg.out-check');
+
+// Template string
+const haproxy_template = fs.readFileSync(
+    path.resolve(__dirname, 'haproxy.cfg.in'), 'utf8');
 
 // Files that the successful reload test will write out
 var haproxy_file = path.resolve(__dirname, '../etc/haproxy.cfg');
@@ -46,63 +45,67 @@ var haproxy_exec = path.resolve(__dirname, '../deps/haproxy-1.8/haproxy');
 
 ///--- Tests
 
-test('test good config file', function (t) {
+tap.test('test good config file', function (t) {
     var opts = { log: helper.createLogger(),
         haproxyExec: haproxy_exec,
-        configFileOut: haproxy_good};
+        configFile: haproxy_good};
     lbm.checkHaproxyConfig(opts, function (err) {
         t.equal(null, err);
         t.done();
     });
 });
 
-test('test no-listener config file (should error)', function (t) {
+tap.test('test no-listener config file (should error)', function (t) {
     var opts = { log: helper.createLogger(),
         haproxyExec: haproxy_exec,
-        configFileOut: haproxy_no_listener};
+        configFile: haproxy_no_listener};
     lbm.checkHaproxyConfig(opts, function (err) {
-        t.notEqual(null, err);
+        t.ok(err);
         t.done();
     });
 });
 
-test('test empty config file (should error)', function (t) {
+tap.test('test empty config file (should error)', function (t) {
     var opts = { log: helper.createLogger(),
         haproxyExec: haproxy_exec,
-        configFileOut: haproxy_empty_error};
+        configFile: haproxy_empty_error};
     lbm.checkHaproxyConfig(opts, function (err) {
-        t.notEqual(null, err);
+        t.ok(err);
         t.done();
     });
 });
 
-test('test parse error config file (should error)', function (t) {
+tap.test('test parse error config file (should error)', function (t) {
     var opts = { log: helper.createLogger(),
         haproxyExec: haproxy_exec,
-        configFileOut: haproxy_parse_error};
+        configFile: haproxy_parse_error};
     lbm.checkHaproxyConfig(opts, function (err) {
-        t.notEqual(null, err);
+        t.ok(err);
         t.done();
     });
 });
 
-test('test no-frontend config file (should error)', function (t) {
+tap.test('test no-frontend config file (should error)', function (t) {
     var opts = { log: helper.createLogger(),
         haproxyExec: haproxy_exec,
-        configFileOut: haproxy_no_frontend};
+        configFile: haproxy_no_frontend};
     lbm.checkHaproxyConfig(opts, function (err) {
-        t.notEqual(null, err);
+        t.ok(err);
         t.done();
     });
 });
 
-test('test writeHaproxyConfig', function (t) {
+tap.test('test writeHaproxyConfig', function (t) {
     var opts = {
         trustedIP: '127.0.0.1',
         untrustedIPs: ['::1', '255.255.255.255'],
-        hosts: ['foo.joyent.us', 'bar.joyent.us'],
-        configFileOut: updConfig_out,
+        servers: {
+            'foo.joyent.us': { address: '127.0.0.1' },
+            'bar.joyent.us': { address: '127.0.0.2' }
+        },
+        configFile: updConfig_out,
         haproxyExec: haproxy_exec,
+        configTemplate: haproxy_template,
         log: helper.createLogger()
     };
     lbm.writeHaproxyConfig(opts, function (err, data) {
@@ -130,15 +133,15 @@ test('test writeHaproxyConfig', function (t) {
     });
 });
 
-test('test writeHaproxyConfig bad config (should error)', function (t) {
-    // haproxy shouldn't like empty hosts (no listen or backend)
+tap.test('test writeHaproxyConfig bad config (should error)', function (t) {
+    // haproxy shouldn't like empty servers
     var opts = {
         trustedIP: '',
         untrustedIPs: [],
-        hosts: [],
-        configFileOut: updConfig_out,
-        configFileIn: haproxy_config_in,
+        servers: {},
+        configFile: updConfig_out,
         haproxyExec: haproxy_exec,
+        configTemplate: haproxy_template,
         log: helper.createLogger()
     };
 
@@ -146,25 +149,24 @@ test('test writeHaproxyConfig bad config (should error)', function (t) {
         lbm.writeHaproxyConfig,
         lbm.checkHaproxyConfig
     ]}, function (err) {
-        t.notEqual(null, err);
+        t.ok(err);
         t.done();
     });
 });
 
-test('test reload', function (t) {
+tap.test('test reload', function (t) {
     var opts = {
         trustedIP: '127.0.0.1',
         untrustedIPs: ['::1', '255.255.255.255'],
-        // This must resolve, so pick something public
-        hosts: ['google.com'],
+        servers: { 'foo.joyent.us': { address: '127.0.0.1' } },
         reload: '/bin/true',
-        configFileIn: haproxy_config_in,
         haproxyExec: haproxy_exec,
+        configTemplate: haproxy_template,
         log: helper.createLogger()
     };
 
     lbm.reload(opts, function (err, data) {
-        t.equal(null, err);
+        t.equal(undefined, err);
         t.doesNotThrow(function () {
             // Check if reload created the proper file
             // this will throw if the file doesn't exist
@@ -177,54 +179,64 @@ test('test reload', function (t) {
     });
 });
 
-test('test reload bad config (should error)', function (t) {
+tap.test('test reload bad config (should error)', function (t) {
     var opts = {
         trustedIP: '127.0.0.1',
         untrustedIPs: ['::1', '255.255.255.255'],
-        hosts: [],
+        servers: {},
         reload: '/bin/true',
-        configFileIn: haproxy_config_in,
         haproxyExec: haproxy_exec,
+        configTemplate: haproxy_template,
         log: helper.createLogger()
     };
 
     lbm.reload(opts, function (err, data) {
-        t.notEqual(null, err);
+        t.ok(err);
         t.done();
     });
 });
 
-test('test dueling reloads', function (t) {
+/*
+ * The first reload is slower due to the sleep, but the serialization should
+ * still invoke its callback first.
+ */
+tap.test('test dueling reloads', function (t) {
     var opts = {
         trustedIP: '127.0.0.1',
         untrustedIPs: ['::1', '255.255.255.255'],
-        hosts: ['google.com', 'joyent.com'],
+        servers: {
+            'foo.joyent.us': { 'address': '127.0.0.1' },
+            'bar.joyent.us': { 'address': '127.0.0.1' }
+        },
         reload: '/bin/sleep 2',
-        configFileIn: haproxy_config_in,
         haproxyExec: haproxy_exec,
+        configTemplate: haproxy_template,
         log: helper.createLogger()
     };
 
     var opts2 = {
         trustedIP: '127.0.0.1',
         untrustedIPs: ['::1', '255.255.255.255'],
-        // This must resolve, so pick something public
-        hosts: ['google.com'],
+        servers: { 'foo.joyent.us': { 'address': '127.0.0.1' } },
         reload: '/bin/true',
-        configFileIn: haproxy_config_in,
         haproxyExec: haproxy_exec,
+        configTemplate: haproxy_template,
         log: helper.createLogger()
     };
 
-    // Reload twice, calling the functions as fast as possible
-    // Using a /bin/sleep call to make sure the first one is still
-    // busy for the second call.
+    var first = false;
+    var second = false;
+
     lbm.reload(opts, function (err, data) {
-        t.equal(null, err);
+        first = true;
+        t.notOk(second, 'second should be false');
+        t.equal(undefined, err);
     });
 
     lbm.reload(opts2, function (err, data) {
-        t.equal(null, err);
+        t.equal(undefined, err);
+        second = true;
+        t.ok(first, 'first should be true');
         t.done();
     });
 });

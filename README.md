@@ -26,4 +26,6 @@ Run `make prepush` before commits; otherwise, follow the
 
 # Testing
 
-Run `make test`. The locally built haproxy is used as part of these tests.
+Run `make test` - you don't need to be privileged. The locally built haproxy is
+used as part of these tests: it expects to be able to use `/tmp/haproxy` as its
+control socket, and it will try to connect to certain local ports.

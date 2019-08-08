@@ -13,69 +13,60 @@
 /*jsl:end*/
 
 const bunyan = require('bunyan');
-const vasync = require('vasync');
-const zkstream = require('zkstream');
+const child_process = require('child_process');
+const fs = require('fs');
+const path = require('path');
 
+const haproxy_exec = path.resolve(__dirname, '../deps/haproxy-1.8/haproxy');
+const haproxy_cfgfile = path.resolve(__dirname, './haproxy.cfg.test');
+const haproxy_pidfile = '/tmp/haproxy.pid.test';
 
 ///--- Helpers
 
 function createLogger(name, stream) {
-        var log = bunyan.createLogger({
-                level: (process.env.LOG_LEVEL || 'warn'),
-                name: name || process.argv[1],
-                stream: stream || process.stdout,
-                src: true,
-                serializers: {
-                        err: bunyan.stdSerializers.err
-                }
-        });
-        return (log);
+    var log = bunyan.createLogger({
+        level: (process.env.LOG_LEVEL || 'warn'),
+        name: name || process.argv[1],
+        stream: stream || process.stdout,
+        src: true,
+        serializers: {
+            err: bunyan.stdSerializers.err
+        }
+    });
+    return (log);
 }
 
+
+function startHaproxy(cb) {
+    child_process.execFile(haproxy_exec, [ '-f', haproxy_cfgfile ],
+      function (error, stdout, stderr) {
+        if (error) {
+            cb(error);
+            return;
+        }
+
+        // give some time for haproxy to start
+        setTimeout(cb, 1000);
+    });
+}
+
+function killHaproxy(cb) {
+    fs.readFile(haproxy_pidfile, function (err, haproxy_pid) {
+        if (err) {
+            cb(err);
+            return;
+        }
+
+        process.kill(haproxy_pid);
+        // give some time for haproxy to die
+        setTimeout(cb, 1000);
+    });
+}
 
 ///--- Exports
 
 module.exports = {
-
-        after: function after(teardown) {
-                module.parent.exports.tearDown = function _teardown(callback) {
-                        try {
-                                teardown.call(this, callback);
-                        } catch (e) {
-                                console.error('after:\n' + e.stack);
-                                process.exit(1);
-                        }
-                };
-        },
-
-        before: function before(setup) {
-                module.parent.exports.setUp = function _setup(callback) {
-                        try {
-                                setup.call(this, callback);
-                        } catch (e) {
-                                console.error('before:\n' + e.stack);
-                                process.exit(1);
-                        }
-                };
-        },
-
-        test: function test(name, tester) {
-                module.parent.exports[name] = function _(t) {
-                        var _done = false;
-                        t.end = function end() {
-                                if (!_done) {
-                                        _done = true;
-                                        t.done();
-                                }
-                        };
-                        t.notOk = function notOk(ok, message) {
-                                return (t.ok(!ok, message));
-                        };
-
-                        tester(t);
-                };
-        },
-
-        createLogger: createLogger
-
+        createLogger: createLogger,
+        startHaproxy: startHaproxy,
+        killHaproxy: killHaproxy
 };

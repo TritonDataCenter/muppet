@@ -1,0 +1,45 @@
+global
+	log 127.0.0.1 local0
+	# run as the user doing 'make test', so extra perms aren't needed
+	#user nobody
+	#group nobody
+	daemon
+	maxconn 2048
+	pidfile /tmp/haproxy.pid.test
+	stats socket /tmp/haproxy mode 0600 level admin
+
+defaults
+	balance leastconn
+	log     global
+	maxconn 2048
+	mode http
+	option forwardfor
+	option http-tunnel
+	option httplog
+	option redispatch
+	no option httpclose
+	no option http-server-close
+	retries 3
+	timeout connect 500
+	timeout client  120000
+	timeout server  240000
+
+frontend https
+	bind 127.0.0.1:6600 accept-proxy
+	default_backend secure_api
+	reqadd x-secure:\ true
+
+backend secure_api
+	option httpchk GET /ping
+	server 4afa9ff4-d918-42ed-9972-9ac20b7cf869:6780 127.0.0.1:6780 check inter 1s slowstart 10s
+	server 5c679a71-9ef7-4079-9a4c-45c9f5b97d45:6781 127.0.0.1:6781 check inter 1s slowstart 10s
+
+
+frontend http
+	bind 127.0.0.1:6700
+	default_backend insecure_api
+
+backend insecure_api
+	option httpchk GET /ping
+	server 4afa9ff4-d918-42ed-9972-9ac20b7cf869:6780 127.0.0.1:6780 check inter 1s slowstart 10s
+	server 5c679a71-9ef7-4079-9a4c-45c9f5b97d45:6781 127.0.0.1:6781 check inter 1s slowstart 10s
