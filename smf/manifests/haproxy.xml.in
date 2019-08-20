@@ -37,6 +37,12 @@
 	    <service_fmri value="svc:/smartdc/mdata:execute" />
 	</dependency>
 
+	<!-- "optional_all" here because people like to disable the config agent for
+	  manual hacks on occasion -->
+	<dependency name='config-agent' grouping='optional_all' restart_on='none' type='service'>
+	    <service_fmri value='svc:/smartdc/application/config-agent' />
+	</dependency>
+
 	<exec_method type="method"
 		     name="start"
 		     exec="/opt/smartdc/muppet/build/haproxy/sbin/haproxy -f /opt/smartdc/muppet/etc/haproxy.cfg -D"

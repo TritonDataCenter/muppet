@@ -13,7 +13,11 @@
 # Makefile.haproxy.targ: building and shipping a private haproxy
 #
 
-BUILDFLAGS = -j8 TARGET=solaris DEFINE=-D_XPG6
+BUILDFLAGS = \
+    -j8 V=1 TARGET=solaris DEFINE=-D_XPG6 USE_OPENSSL=1 \
+    ADDLIB="-L/opt/local/lib -R/opt/local/lib"
+
+
 $(HAPROXY_EXEC): $(HAPROXY_SRC)/.git
 	cd $(HAPROXY_SRC) && \
 	    $(MAKE) $(BUILDFLAGS) && \

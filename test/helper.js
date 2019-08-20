@@ -17,9 +17,10 @@ const child_process = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const haproxy_exec = path.resolve(__dirname, '../deps/haproxy-1.8/haproxy');
+const haproxy_exec = path.resolve(__dirname, '../deps/haproxy/haproxy');
 const haproxy_cfgfile = path.resolve(__dirname, './haproxy.cfg.test');
 const haproxy_pidfile = '/tmp/haproxy.pid.test';
+const haproxy_pemfile = '/tmp/haproxy.test.pem';
 
 ///--- Helpers
 
@@ -38,15 +39,26 @@ function createLogger(name, stream) {
 
 
 function startHaproxy(cb) {
-    child_process.execFile(haproxy_exec, [ '-f', haproxy_cfgfile ],
+    child_process.execFile('/opt/local/bin/openssl', [ 'req', '-x509',
+        '-nodes', '-days', '365', '-newkey', 'rsa:2048', '-keyout',
+        haproxy_pemfile, '-out', haproxy_pemfile, '-subj',
+        '/C=US/ST=CA/O=Joyent/OU=manta/CN=localhost' ],
       function (error, stdout, stderr) {
         if (error) {
             cb(error);
             return;
         }
 
-        // give some time for haproxy to start
-        setTimeout(cb, 1000);
+        child_process.execFile(haproxy_exec, [ '-f', haproxy_cfgfile ],
+          function (error2, stdout2, stderr2) {
+            if (error2) {
+                cb(error2);
+                return;
+            }
+
+            // give some time for haproxy to start
+            setTimeout(cb, 1000);
+        });
     });
 }
 

@@ -1,0 +1,90 @@
+
+"
+<elijah.zupancic> Also, for what it is worth - SCloud should be using a JDK
+wired through PKCS11 to use libnss.
+<elijah.zupancic> So, if libnss supports the cipher, all the better because then
+we can use a native code call out.
+"
+
+FIXME: check / ask for node-manta header case-sensitivity, elsewhere?
+
+https://github.com/joyent/java-manta/blob/master/USAGE.md#enabling-libnss-support-via-pkcs11
+
+ - check against ssl online checkers somehow
+ - figure out seamless cert reload - sdc-manta cmd/manta-replace-cert.js
+ - alarms based on RSS size - need modificaiton?
+ - check pfiles?
+ - nbthreads work OK?
+ - java-manta test
+
+MANTA-3252 - stud / loadbalancer stuff
+
+MANTA-1424 / MANTA-3680
+24 stud works
+
+stud manifest depends on config-agent, need to transfer over
+
+MANTA-3526 - disable TLS 1.0
+ - still seems enabled
+ - missing TLS 1.3
+
+https://ssldecoder.org/
+
+https://www.ssllabs.com/ssltest/analyze.html?d=us%2deast.manta.joyent.com&s=72.2.112.194&hideResults=on&latest
+
+https://github.com/joyent/rfd/tree/master/rfd/0093
+
+sdc-manta/ cmd/manta-replace-cert.js
+
+no-sslv3
+
+OCSP stapling??
+https://tools.ietf.org/html/rfc6962
+
+ssl-dh-param-file <file>
+
+from stud:
+
+# Preferred cipher list as per RFD 93
+# https://github.com/joyent/rfd/tree/master/rfd/0093
+ciphers = "EECDH+CHACHA20:EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:HIGH:!MD5:!aNULL:!PSK"
+
+keepalive = 3600
+
+
+Mozilla says:
+
+https://ssl-config.mozilla.org/#server=haproxy&server-version=1.9.8&config=intermediate
+
+    # intermediate configuration, tweak to your needs
+    ssl-default-bind-ciphers
+ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384
+    ssl-default-bind-ciphersuites
+TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256
+    ssl-default-bind-options no-sslv3 no-tlsv10 no-tlsv11 no-tls-tickets
+
+
+    # HSTS (63072000 seconds)
+    http-response set-header Strict-Transport-Security max-age=63072000
+
+
+
+
+https://cipherli.st/ - haproxy config recommendation
+ says:
+
+global
+   ssl-default-bind-options no-sslv3 no-tls-tickets force-tlsv12
+   ssl-default-bind-ciphers EECDH+AESGCM:EDH+AESGCM
+   tune.ssl.default-dh-param 2048
+
+frontend https-in
+    option httplog
+    option forwardfor
+    option http-server-close
+    option httpclose
+    rspadd Strict-Transport-Security:\ max-age=31536000;\ includeSubDomains;\
+preload
+    rspadd X-Frame-Options:\ DENY
+    bind $YOUR_IP:443 ssl crt /etc/haproxy/haproxy.pem ciphers
+EECDH+AESGCM:EDH+AESGCM force-tlsv12 no-sslv3
