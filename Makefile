@@ -80,7 +80,7 @@ AGENTS		= amon config registrar
 #
 .PHONY: all
 all $(TAP_EXEC): $(SMF_MANIFESTS) | $(NPM_EXEC) $(REPO_DEPS) $(HAPROXY_EXEC) scripts
-	$(NPM) install
+	$(NPM) install --no-save
 
 DISTCLEAN_FILES += ./node_modules
 

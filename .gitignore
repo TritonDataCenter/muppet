@@ -9,6 +9,5 @@ etc/haproxy.cfg
 cscope.in.out
 cscope.po.out
 cscope.out
-package-lock.json
 smf/manifests/*.xml
 /*.tar.gz
