@@ -86,8 +86,19 @@ tap.test('test writeHaproxyConfig', function (t) {
         trustedIP: '127.0.0.1',
         untrustedIPs: ['::1', '255.255.255.255'],
         servers: {
-            'foo.joyent.us': { address: '127.0.0.1' },
-            'bar.joyent.us': { address: '127.0.0.2' }
+            'foo.joyent.us': {
+                kind: 'webapi',
+                address: '127.0.0.1'
+            },
+            'bar.joyent.us': {
+                kind: 'webapi',
+                address: '127.0.0.2'
+            },
+            'baz.joyent.us': {
+                kind: 'buckets-api',
+                address: '127.0.0.3',
+                ports: [ '8081', '8082', '8083', '8084' ]
+            }
         },
         configFile: updConfig_out,
         haproxyExec: haproxy_exec,
@@ -114,7 +125,7 @@ tap.test('test writeHaproxyConfig', function (t) {
                 }
             }
         });
-        //fs.unlinkSync(updConfig_out);
+        fs.unlinkSync(updConfig_out);
         t.done();
     });
 });
@@ -191,8 +202,8 @@ tap.test('test dueling reloads', function (t) {
         trustedIP: '127.0.0.1',
         untrustedIPs: ['::1', '255.255.255.255'],
         servers: {
-            'foo.joyent.us': { 'address': '127.0.0.1' },
-            'bar.joyent.us': { 'address': '127.0.0.1' }
+            'foo.joyent.us': { kind: 'webapi', address: '127.0.0.1' },
+            'bar.joyent.us': { kind: 'webapi', address: '127.0.0.1' }
         },
         reload: '/bin/sleep 2',
         haproxyExec: haproxy_exec,
@@ -203,7 +214,7 @@ tap.test('test dueling reloads', function (t) {
     var opts2 = {
         trustedIP: '127.0.0.1',
         untrustedIPs: ['::1', '255.255.255.255'],
-        servers: { 'foo.joyent.us': { 'address': '127.0.0.1' } },
+        servers: { 'foo.joyent.us': { kind: 'webapi', address: '127.0.0.1' } },
         reload: '/bin/true',
         haproxyExec: haproxy_exec,
         configTemplate: haproxy_template,

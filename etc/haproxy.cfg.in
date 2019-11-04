@@ -43,6 +43,10 @@ defaults
         errorfile 503 /opt/smartdc/muppet/etc/503.http
         errorfile 504 /opt/smartdc/muppet/etc/503.http
 
+backend buckets_api
+        option httpchk GET /ping
+%s
+
 backend secure_api
         option httpchk GET /ping
 %s
@@ -57,6 +61,8 @@ backend haproxy-stats_http
         stats uri /
 
 frontend https
+        acl acl_bucket path_reg ^/[^/]+/buckets
+        use_backend buckets_api if acl_bucket
         default_backend secure_api
         bind *:443 ssl crt /opt/smartdc/muppet/etc/ssl.pem
 
@@ -67,5 +73,5 @@ frontend http_internal
         bind %s:80
 
 frontend stats_http
-         default_backend haproxy-stats_http
-         bind %s:8080
+        default_backend haproxy-stats_http
+        bind %s:8080

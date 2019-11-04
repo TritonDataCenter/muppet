@@ -46,6 +46,9 @@ defaults
         errorfile 503 /opt/smartdc/muppet/etc/503.http
         errorfile 504 /opt/smartdc/muppet/etc/503.http
 
+backend buckets_api
+        option httpchk GET /ping
+
 backend secure_api
         option httpchk GET /ping
 

@@ -8,6 +8,31 @@
     Copyright 2019 Joyent, Inc.
 -->
 
+# buckets branch
+
+Fixes:
+
+MANTA-3680 loadbalancer stud processes are not evenly utilized
+MANTA-1424 stud not restarted when SSL certificate changes
+MANTA-3252 use haproxy SSL termination for loadbalancer
+MANTA-4615 Front door load balancing for buckets
+MANTA-3526 want to disable tls 1.0
+
+Remaining TODO:
+
+ - some proper perf QA qualification
+ - figure out O(children processes) settings: do we need production value
+   set via boot/setup.sh?
+ - enabled cipher list: sufficient? do we need older ones?
+   (check against scloud JDK using
+    https://github.com/joyent/java-manta/blob/master/USAGE.md#enabling-libnss-support-via-pkcs11)
+ - re-verify grading against RFD93 tools: https://ssldecoder.org/,
+   https://www.ssllabs.com/ssltest/analyze.html, https://cipherli.st/
+ - all clients OK now with header case insensitivity?
+ - fix/verify cmd/manta-replace-cert.js 
+ - should muppet now depend on config-agent?
+ - need to fix RSS alarm for new setup?
+
 # muppet
 
 This repository is part of the Joyent SmartDataCenter project (SDC), and the
@@ -16,8 +41,11 @@ documentation, visit the main [SDC](http://github.com/joyent/sdc) and
 [Manta](http://github.com/joyent/manta) project pages.
 
 Muppet is an HTTP loadbalancer (haproxy) and small daemon that interacts with
-ZooKeeper via registrar.  The muppet daemon will update the loadbalancer with
-new configuration as hosts come and go from the given service name.
+ZooKeeper via [registrar](https://github.com/joyent/registrar).  The muppet
+daemon will update the loadbalancer as backend servers come and go.
+
+See the [documentation](https://github.com/joyent/muppet/docs/index.md) for
+more details.
 
 # Development
 

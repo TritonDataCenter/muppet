@@ -39,6 +39,10 @@ defaults
         timeout connect 2000
         timeout server  240000
 
+backend buckets_api
+        option httpchk GET /ping
+%s
+
 backend secure_api
         option httpchk GET /ping
 %s
@@ -53,6 +57,8 @@ backend haproxy-stats_http
         stats uri /
 
 frontend https
+        acl acl_bucket path_reg ^/[^/]+/buckets
+        use_backend buckets_api if acl_bucket
         default_backend secure_api
         bind *:443 # ssl crt /opt/smartdc/muppet/etc/ssl.pem
 

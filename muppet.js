@@ -88,7 +88,7 @@ function configure() {
         process.exit(1);
     }
 
-    mod_assert.string(cfg.name, 'config.name');
+    mod_assert.string(cfg.domain, 'config.domain');
     mod_assert.string(cfg.trustedIP, 'config.trustedIP');
     mod_assert.object(cfg.zookeeper, 'config.zookeeper');
     mod_assert.optionalArrayOfString(cfg.untrustedIPs,

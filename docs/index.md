@@ -13,62 +13,49 @@ apisections:
     Copyright 2019 Joyent, Inc.
 -->
 
-# tl;dr
-
-muppet is a custom loadbalancing solution that runs haproxy and a daemon that
-watches group membership changes in ZooKeeper.
-
 # Overview
 
-In manta at least, all configuration of the load balancer is automatically
-managed by the muppet service, which watches for registrar changes in ZooKeeper.
-This updates the upstream server list of IP addresses and refreshes the haproxy
-loadbalancer service as appropriate.
+This repository builds the "manta-loadbalancer" image that is the public access
+point of a Manta installation (such as `https://manta.region.example.com/`).
+Multiple instances can be configured and are themselves load-balanced on the
+client side via DNS lookup.
 
-# Configuration
-
-FIXME: ports etc.
-
-### Generate an OpenSSL Certificate
-
-FIXME:
-
-Run this command:
-
-    $ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-        -keyout /opt/local/etc/server.pem -out /opt/local/etc/server.pem \
-        -subj "/C=US/ST=CA/O=Joyent/OU=manta/CN=localhost"
+Each instance runs `haproxy`, which routes requests to the backend servers,
+and `muppet`, which manages `haproxy` configuration.
 
 ## Load Balancer
 
-The loadbalancer used is [HAProxy](http://www.haproxy.org/).  There is an
-`haproxy.cfg.in` file that is templated with a sparse number of `%s`; this file
-is used to generate a new haproxy.cfg each time the topology of online
-loadbalancers changes.
+The loadbalancer used is [HAProxy](http://www.haproxy.org/). It logs via syslog
+to `/var/log/haproxy.log`.
 
-*Important:* Checked into this repo is a "blank" haproxy.cfg.default - *DO NOT
-EDIT THIS FILE!*, except in the case you need the default behaviour to change.
-That file is used as a syntactically correct, but empty haproxy.cfg file that we
-use to bootstrap haproxy _before_ muppet is running.  Any changes you want to
-see made to haproxy.cfg must be made in the template file, as that's what you
-really care about.
+Requests are routed to either [webapi](https://github.com/joyent/manta-muskie/)
+or [buckets-api](https://github.com/joyent/manta-buckets-api) API server
+instances as needed.  All `http` requests not matching the route
+`/:login/buckets/` are considered to be directory-style requests.
+
+*Important:* `muppet` is in control of the actual live configuration, and any
+configuration changes should be made there. In particular, modifications of the
+live `/opt/smartdc/muppet/etc/haproxy.cfg` may be over-written by `muppet` at
+will.
+
+`haproxy` is configured to handle SSL termination. The certificate used is
+managed by `config-agent`, and can be updated in the Manta deployment zone using
+[manta-replace-cert](https://github.com/joyent/sdc-manta/blob/master/cmd/manta-replace-cert.js).
 
 ## Muppet
 
-*name* is really the important variable here, as that dictates the path in
-ZooKeeper to watch (note the DNS name is reversed and turned into a `/`
-separated path); entries should have been written there by `registrar`.
+There is an `haproxy.cfg.in` file that is templated with a sparse number of
+`%s`; this file is used by `muppet` to generate a new `haproxy.cfg` each time
+the topology of online loadbalancers changes.
 
-    {
-        "name": "manta.bh1-kvm1.joyent.us",
-        "srvce": "_http",
-        "proto": "_tcp",
-        "port": 80,
-        "zookeeper": {
-            "servers": [ {
-                "host": "10.2.201.66",
-                "port": 2181
-            } ],
-            "timeout": 1000
-        }
-    }
+The `muppet` daemon directly connects to the
+[registrar](https://github.com/joyent/registrar) Zookeeper set up looking for
+changes to nodes under the `manta` (for `webapi`) or `buckets-api` path.  As
+backend servers come and go, the `haproxy` backend server configuration is
+updated as needed. If possible, we dynamically disable/enable the servers by
+talking to the `haproxy` management interface; if not, then we refresh
+`haproxy`, which starts a new child process without interrupting existing
+connections.
+
+Note that `haproxy` itself is configured to do basic health checks on the
+backend servers, and will retire use of any unhealthy servers.

@@ -42,6 +42,10 @@ defaults
         timeout connect 2000
         timeout server  240000
 
+backend buckets_api
+        option httpchk GET /ping
+        server cdf37eb6-090a-4e68-8282-90e99c6bb04d:8081 127.0.0.1:8081 check inter 1s slowstart 10s
+
 backend secure_api
         option httpchk GET /ping
         server 4afa9ff4-d918-42ed-9972-9ac20b7cf869:6780 127.0.0.1:6780 check inter 1s slowstart 10s
@@ -53,9 +57,11 @@ backend insecure_api
         server 5c679a71-9ef7-4079-9a4c-45c9f5b97d45:6781 127.0.0.1:6781 check inter 1s slowstart 10s
 
 frontend https
+        acl acl_bucket path_reg ^/[^/]+/buckets
+        use_backend buckets_api if acl_bucket
         default_backend secure_api
         bind 127.0.0.1:6443 ssl crt /tmp/haproxy.test.pem
 
 frontend http
-       bind 127.0.0.1:6080
-       default_backend insecure_api
+        bind 127.0.0.1:6080
+        default_backend insecure_api
