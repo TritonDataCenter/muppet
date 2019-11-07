@@ -29,8 +29,6 @@ Remaining TODO:
  - re-verify grading against RFD93 tools: https://ssldecoder.org/,
    https://www.ssllabs.com/ssltest/analyze.html, https://cipherli.st/
  - all clients OK now with header case insensitivity?
- - fix/verify cmd/manta-replace-cert.js 
- - should muppet now depend on config-agent?
  - need to fix RSS alarm for new setup?
 
 # muppet
