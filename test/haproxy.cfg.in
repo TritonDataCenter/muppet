@@ -6,15 +6,15 @@ global
         master-worker
         # maximum of 10 reloads before killing old workers
         mworker-max-reloads 10
-        # haproxy auto-sizing is not implemented on illumos
-        nbthread 20
-        log 127.0.0.1 local0
+        # hard-coded for testing
+        nbthread 1
+        log 127.0.0.1 len 4096 local0
+        tune.http.logurilen 3072
         user nobody
         group nobody
         daemon
         maxconn 65535
         pidfile /var/run/haproxy.pid
-        log-send-hostname %s
         # expose-fd listeners also required for seamless config reload
         stats socket /tmp/haproxy mode 0600 level admin expose-fd listeners
         tune.ssl.default-dh-param 2048
@@ -31,6 +31,7 @@ defaults
         mode http
         option forwardfor
         option httplog
+        # log-format not specified for testing
         option redispatch
         no option httpclose
         no option http-server-close
@@ -38,18 +39,25 @@ defaults
         timeout client  120000
         timeout connect 2000
         timeout server  240000
+        # may not exist on test system, so disabled
+        # errorfile 400 /opt/smartdc/muppet/etc/400.http
+        # errorfile 408 /opt/smartdc/muppet/etc/408.http
+        # errorfile 500 /opt/smartdc/muppet/etc/503.http
+        # errorfile 502 /opt/smartdc/muppet/etc/503.http
+        # errorfile 503 /opt/smartdc/muppet/etc/503.http
+        # errorfile 504 /opt/smartdc/muppet/etc/503.http
 
 backend buckets_api
         option httpchk GET /ping
-%s
+%(bucket_servers)s
 
 backend secure_api
         option httpchk GET /ping
-%s
+%(webapi_secure_servers)s
 
 backend insecure_api
         option httpchk GET /ping
-%s
+%(webapi_insecure_servers)s
 
 backend haproxy-stats_http
         stats enable
@@ -57,17 +65,19 @@ backend haproxy-stats_http
         stats uri /
 
 frontend https
+        http-request capture req.hdr(x-request-id) len 36
         acl acl_bucket path_reg ^/[^/]+/buckets
         use_backend buckets_api if acl_bucket
         default_backend secure_api
+        # ssl disabled for testing purposes
         bind *:443 # ssl crt /opt/smartdc/muppet/etc/ssl.pem
 
-%s
+%(insecure_frontend)s
 
 frontend http_internal
         default_backend secure_api
-        bind %s:80
+        bind %(trusted_ip)s:80
 
 frontend stats_http
         default_backend haproxy-stats_http
-        bind %s:8080
+        bind %(trusted_ip)s:8080

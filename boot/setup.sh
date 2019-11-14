@@ -39,7 +39,7 @@ function manta_setup_haproxy {
     rm -f /etc/syslog.conf
 
     # Tack in what we need to rsyslog
-    echo 'local0.*  /var/log/haproxy.log' >> /etc/rsyslog.conf
+    echo 'local0.*  /var/log/haproxy.log;bunyan' >> /etc/rsyslog.conf
 
     svcadm restart system-log
     [[ $? -eq 0 ]] || fatal "Unable to restart rsyslog"

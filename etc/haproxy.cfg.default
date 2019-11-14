@@ -10,7 +10,8 @@ global
         mworker-max-reloads 10
         # haproxy auto-sizing is not implemented on illumos
         nbthread 20
-        log 127.0.0.1 local0
+        log 127.0.0.1 len 4096 local0
+        tune.http.logurilen 3072
         user nobody
         group nobody
         daemon

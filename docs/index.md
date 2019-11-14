@@ -43,7 +43,26 @@ managed by `config-agent`, and can be updated in the Manta deployment zone using
 This updates the SAPI metadata key `SSL_CERTIFICATE`, and be used without
 interrupting loadbalancer service.
 
-`haproxy` is set up to log (via syslog) to `/var/log/haproxy.log`
+`haproxy` is set up to log (via syslog) to `/var/log/haproxy.log` in a format
+that apes [bunyan](https://github.com/trentm/node-bunyan), to allow use of the
+`bunyan(1)` CLI, `tail -f /var/log/haproxy | json -ga`, etc. Only the request
+header `x-request-id` is logged. The meaning of the fields can be found in the
+[haproxy configuration
+manual](https://cbonte.github.io/haproxy-dconv/2.0/configuration.html). They're
+generally self explanatory, except:
+
+ - `time`: this is the timestamp haproxy received the first byte of the request
+ - `retries`: count of server connection retries
+ - `res_bytes_read`: size of response to client
+ - `timers.req`: request read time, excluding request body (%TR)
+ - `timers.queued`: time queued in haproxy (%Tw)
+ - `timers.server_conn`: server connection time (%Tc)
+ - `timers.res`: time for server response, excluding response body (%Tr)
+ - `timers.total`: total request-to-response time, including body (%Ta)
+
+See [Timing
+events](https://cbonte.github.io/haproxy-dconv/2.0/configuration.html#8.4) for
+handy ASCII art on the timer's exact meanings.
 
 ## Muppet
 

@@ -6,13 +6,13 @@ global
         mworker-max-reloads 10
         # haproxy auto-sizing is not implemented on illumos
         nbthread 20
-        log 127.0.0.1 local0
+        log 127.0.0.1 len 4096 local0
+        tune.http.logurilen 3072
         user nobody
         group nobody
         daemon
         maxconn 65535
         pidfile /var/run/haproxy.pid
-        log-send-hostname %s
         # expose-fd listeners also required for seamless config reload
         stats socket /tmp/haproxy mode 0600 level admin expose-fd listeners
         tune.ssl.default-dh-param 2048
@@ -29,6 +29,7 @@ defaults
         mode http
         option forwardfor
         option httplog
+        log-format %(log_format)s
         option redispatch
         no option httpclose
         no option http-server-close
@@ -45,15 +46,15 @@ defaults
 
 backend buckets_api
         option httpchk GET /ping
-%s
+%(bucket_servers)s
 
 backend secure_api
         option httpchk GET /ping
-%s
+%(webapi_secure_servers)s
 
 backend insecure_api
         option httpchk GET /ping
-%s
+%(webapi_insecure_servers)s
 
 backend haproxy-stats_http
         stats enable
@@ -61,17 +62,18 @@ backend haproxy-stats_http
         stats uri /
 
 frontend https
+        http-request capture req.hdr(x-request-id) len 36
         acl acl_bucket path_reg ^/[^/]+/buckets
         use_backend buckets_api if acl_bucket
         default_backend secure_api
         bind *:443 ssl crt /opt/smartdc/muppet/etc/ssl.pem
 
-%s
+%(insecure_frontend)s
 
 frontend http_internal
         default_backend secure_api
-        bind %s:80
+        bind %(trusted_ip)s:80
 
 frontend stats_http
         default_backend haproxy-stats_http
-        bind %s:8080
+        bind %(trusted_ip)s:8080

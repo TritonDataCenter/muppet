@@ -114,13 +114,10 @@ tap.test('test writeHaproxyConfig', function (t) {
 
         diff.forEach(function (part) {
             if (part.added) {
-                if (! part.value.includes('log-send-hostname')) {
-                    t.equal(null, part.value);
-                }
+                t.equal(null, part.value);
             } else if (part.removed) {
-                if ((! part.value.includes('log-send-hostname')) &&
-                    // the input cfg is commented
-                    (! part.value.startsWith('#'))) {
+                // the input cfg is commented
+                if (!part.value.startsWith('#')) {
                     t.equal(null, part.value);
                 }
             }
