@@ -40,7 +40,7 @@ const haproxy_template = fs.readFileSync(
 var haproxy_file = path.resolve(__dirname, '../etc/haproxy.cfg');
 var haproxy_file_tmp = path.resolve(__dirname, '../etc/haproxy.cfg.tmp');
 
-var haproxy_exec = path.resolve(__dirname, '../deps/haproxy-1.8/haproxy');
+var haproxy_exec = path.resolve(__dirname, '../build/haproxy/sbin/haproxy');
 
 
 ///--- Tests

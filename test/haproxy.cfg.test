@@ -6,7 +6,7 @@ global
 	daemon
 	maxconn 2048
 	pidfile /tmp/haproxy.pid.test
-	stats socket /tmp/haproxy mode 0600 level admin
+	stats socket /tmp/haproxy.test mode 0600 level admin
 
 defaults
 	balance leastconn

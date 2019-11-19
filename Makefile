@@ -117,6 +117,7 @@ release: all docs $(SMF_MANIFESTS)
 		$(ROOT)/package.json \
 		$(ROOT)/sapi_manifests \
 		$(ROOT)/smf \
+		$(ROOT)/test \
 		$(RELSTAGEDIR)/root/opt/smartdc/$(NAME)
 	mv $(RELSTAGEDIR)/root/opt/smartdc/$(NAME)/build/scripts \
 	    $(RELSTAGEDIR)/root/opt/smartdc/$(NAME)/boot

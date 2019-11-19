@@ -30,8 +30,6 @@ const HOLD_TIME = 3000;
 const RETRY_TIMEOUT = 1500;
 const SMEAR = 0;
 
-tap.jobs = 4;
-
 function MockZookeeper() {
     this.res = {};
     this.res_no_node = {};
