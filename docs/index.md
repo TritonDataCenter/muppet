@@ -86,3 +86,7 @@ backend servers, and will retire use of any unhealthy servers.
 The metadata key `SSL_CERTIFICATE` of the loadbalancer SAPI service should
 contain the text of the private key used as the `haproxy` certificate; see
 above.
+
+The metadata key `HAPROXY_NBTHREAD` defines the number of `haproxy` worker
+threads. The default is `20`. Changing this requires restarting `muppet` but
+shouldn't interrupt `haproxy` service.

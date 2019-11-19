@@ -13,5 +13,8 @@
       {{/ZK_SERVERS}}
     ],
     "timeout": 60000
+  },
+  "haproxy": {
+    "nbthread": {{{HAPROXY_NBTHREAD}}}{{^HAPROXY_NBTHREAD}}20{{/HAPROXY_NBTHREAD}}
   }
 }

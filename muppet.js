@@ -88,11 +88,11 @@ function configure() {
         process.exit(1);
     }
 
-    mod_assert.string(cfg.domain, 'config.domain');
-    mod_assert.string(cfg.trustedIP, 'config.trustedIP');
-    mod_assert.object(cfg.zookeeper, 'config.zookeeper');
-    mod_assert.optionalArrayOfString(cfg.untrustedIPs,
-        'config.untrustedIPs');
+    mod_assert.string(cfg.domain, 'cfg.domain');
+    mod_assert.string(cfg.trustedIP, 'cfg.trustedIP');
+    mod_assert.object(cfg.zookeeper, 'cfg.zookeeper');
+    mod_assert.number(cfg.haproxy.nbthread, 'cfg.haproxy.nbthread');
+    mod_assert.optionalArrayOfString(cfg.untrustedIPs, 'cfg.untrustedIPs');
 
     if (cfg.logLevel)
         log.level(cfg.logLevel);
