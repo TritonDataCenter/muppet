@@ -17,7 +17,8 @@ const child_process = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const haproxy_exec = path.resolve(__dirname, '../deps/haproxy-1.8/haproxy');
+const haproxy_exec = path.resolve(__dirname, '../build/haproxy/sbin/haproxy');
+
 const haproxy_cfgfile = path.resolve(__dirname, './haproxy.cfg.test');
 const haproxy_pidfile = '/tmp/haproxy.pid.test';
 
@@ -33,6 +34,7 @@ function createLogger(name, stream) {
             err: bunyan.stdSerializers.err
         }
     });
+    process.env.MUPPET_TESTING = '1';
     return (log);
 }
 
