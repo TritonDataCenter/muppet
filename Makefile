@@ -45,6 +45,8 @@ SMF_MANIFESTS_IN = smf/manifests/$(NAME).xml.in smf/manifests/haproxy.xml.in smf
 # Variables
 #
 
+SHELL=bash
+
 NODE_PREBUILT_VERSION=v6.17.0
 NODE_PREBUILT_TAG=zone64
 NODE_PREBUILT_IMAGE=c2c31b00-1d60-11e9-9a77-ff9f06554b0f
@@ -88,7 +90,7 @@ DISTCLEAN_FILES += ./node_modules
 
 # need to sed out leading whitespace for bunyan to trigger
 test: $(TAP_EXEC)
-	$(TAP_EXEC) --strict -T 60 test/*.test.js | sed 's+^    {+{+' | bunyan
+	$(TAP_EXEC) --strict -T 60 test/*.test.js > >(sed 's+^    {+{+' | bunyan)
 
 .PHONY: scripts
 scripts: deps/manta-scripts/.git
