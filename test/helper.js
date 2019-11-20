@@ -34,7 +34,7 @@ function createLogger(name, stream) {
             err: bunyan.stdSerializers.err
         }
     });
-    process.env.TESTING = '1';
+    process.env.MUPPET_TESTING = '1';
     return (log);
 }
 
