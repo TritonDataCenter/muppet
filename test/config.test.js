@@ -33,8 +33,7 @@ const haproxy_template = fs.readFileSync(
     path.resolve(__dirname, 'haproxy.cfg.in'), 'utf8');
 
 // Files that the successful reload test will write out
-var haproxy_file = path.resolve(__dirname, '../etc/haproxy.cfg');
-var haproxy_file_tmp = path.resolve(__dirname, '../etc/haproxy.cfg.tmp');
+var haproxy_file = path.resolve(__dirname, 'haproxy.cfg');
 
 var haproxy_exec = path.resolve(__dirname, '../build/haproxy/sbin/haproxy');
 
@@ -158,6 +157,7 @@ tap.test('test reload', function (t) {
         servers: { 'foo.joyent.us': { address: '127.0.0.1' } },
         reload: '/bin/true',
         haproxyExec: haproxy_exec,
+        configFile: haproxy_file,
         configTemplate: haproxy_template,
         log: helper.createLogger()
     };
@@ -184,6 +184,7 @@ tap.test('test reload bad config (should error)', function (t) {
         servers: {},
         reload: '/bin/true',
         haproxyExec: haproxy_exec,
+        configFile: haproxy_file,
         configTemplate: haproxy_template,
         log: helper.createLogger()
     };
@@ -209,6 +210,7 @@ tap.test('test dueling reloads', function (t) {
         },
         reload: '/bin/sleep 2',
         haproxyExec: haproxy_exec,
+        configFile: haproxy_file,
         configTemplate: haproxy_template,
         log: helper.createLogger()
     };
@@ -220,6 +222,7 @@ tap.test('test dueling reloads', function (t) {
         servers: { 'foo.joyent.us': { kind: 'webapi', address: '127.0.0.1' } },
         reload: '/bin/true',
         haproxyExec: haproxy_exec,
+        configFile: haproxy_file,
         configTemplate: haproxy_template,
         log: helper.createLogger()
     };
