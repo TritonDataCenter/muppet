@@ -39,7 +39,7 @@ JSL_CONF_NODE	 = tools/jsl.node.conf
 JSL_FILES_NODE	 = $(JS_FILES)
 JSSTYLE_FILES	 = $(JS_FILES)
 JSSTYLE_FLAGS	 = -f tools/jsstyle.conf
-SMF_MANIFESTS_IN = smf/manifests/$(NAME).xml.in smf/manifests/haproxy.xml.in smf/manifests/stud.xml.in
+SMF_MANIFESTS_IN = smf/manifests/$(NAME).xml.in smf/manifests/haproxy.xml.in
 
 #
 # Variables
@@ -74,7 +74,7 @@ RELSTAGEDIR			:= /tmp/$(NAME)-$(STAMP)
 BASE_IMAGE_UUID = a9368831-958e-432d-a031-f8ce6768d190
 BUILDIMAGE_NAME = manta-loadbalancer
 BUILDIMAGE_DESC	= Manta loadbalancer
-BUILDIMAGE_PKGSRC = openssl-1.0.2p stud-0.3p53nb7
+BUILDIMAGE_PKGSRC = openssl-1.0.2p
 AGENTS		= amon config registrar
 
 #
@@ -107,7 +107,6 @@ release: all docs $(SMF_MANIFESTS)
 	@mkdir -p $(RELSTAGEDIR)/root/opt/smartdc/$(NAME)/smf/manifests
 	@cp $(ROOT)/etc/haproxy.cfg.default $(RELSTAGEDIR)/root/opt/smartdc/$(NAME)/etc
 	@cp $(ROOT)/etc/haproxy.cfg.in $(RELSTAGEDIR)/root/opt/smartdc/$(NAME)/etc
-	@cp $(ROOT)/etc/stud.conf $(RELSTAGEDIR)/root/opt/smartdc/$(NAME)/etc
 	@cp $(ROOT)/etc/*.http $(RELSTAGEDIR)/root/opt/smartdc/$(NAME)/etc
 	@cp $(ROOT)/smf/manifests/*.xml \
 		$(RELSTAGEDIR)/root/opt/smartdc/$(NAME)/smf/manifests

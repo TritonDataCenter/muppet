@@ -7,7 +7,7 @@
 #
 
 #
-# Copyright (c) 2014, Joyent, Inc.
+# Copyright 2019 Joyent, Inc.
 #
 
 set -o xtrace
@@ -39,7 +39,7 @@ function manta_setup_haproxy {
     rm -f /etc/syslog.conf
 
     # Tack in what we need to rsyslog
-    echo 'local0.*  /var/log/haproxy.log' >> /etc/rsyslog.conf
+    echo 'local0.*  /var/log/haproxy.log;bunyan' >> /etc/rsyslog.conf
 
     svcadm restart system-log
     [[ $? -eq 0 ]] || fatal "Unable to restart rsyslog"
@@ -52,15 +52,6 @@ function manta_setup_haproxy {
     svcadm enable haproxy
     [[ $? -eq 0 ]] || fatal "Unable to start haproxy"
 }
-
-
-function manta_setup_stud {
-    manta_add_logadm_entry "stud"
-    svccfg import $SVC_ROOT/smf/manifests/stud.xml
-    svcadm enable stud
-    [[ $? -eq 0 ]] || fatal "Unable to start stud"
-}
-
 
 
 # Mainline
@@ -77,9 +68,6 @@ manta_ensure_zk
 
 echo "Setting up registrar"
 manta_setup_registrar
-
-echo "Setting up stud"
-manta_setup_stud
 
 echo "Setting up haproxy"
 manta_setup_haproxy

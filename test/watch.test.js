@@ -55,7 +55,6 @@ MockZookeeper.prototype.isConnected = function () {
 function setup(zk) {
     var watcher = new watch.ServerWatcherFSM({
         zk: new MockZookeeper(),
-        path: '',
         log: log
     });
 
@@ -70,16 +69,16 @@ function setup(zk) {
 tap.test('test collecting serversChanged', function (t) {
     var watcher = setup();
 
-    watcher.sw_zk.res['/c1'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c1'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.1' }
     });
-    watcher.sw_zk.res['/c2'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c2'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.2' }
     });
 
     /*
      * We're testing the collection period here: we expect that after multiple
-     * childrenChanged() calls during COLLECTION_TIME, we only get one final
+     * nodesChanged() calls during COLLECTION_TIME, we only get one final
      * serversChanged() emitted, with the final child list of c1,c2.
      */
 
@@ -91,14 +90,14 @@ tap.test('test collecting serversChanged', function (t) {
     });
 
     t.comment('adding c1');
-    watcher.childrenChanged(['c1']);
+    watcher.nodesChanged('/p/manta', ['c1']);
 
     setTimeout(function () {
         t.comment('adding c2,c3');
-        watcher.childrenChanged(['c1', 'c2', 'c3']);
+        watcher.nodesChanged('/p/manta', ['c1', 'c2', 'c3']);
         setTimeout(function () {
             t.comment('removing c3');
-            watcher.childrenChanged(['c1', 'c2']);
+            watcher.nodesChanged('/p/manta', ['c1', 'c2']);
         }, 100);
     }, 100);
 });
@@ -106,15 +105,15 @@ tap.test('test collecting serversChanged', function (t) {
 tap.test('test no net change', function (t) {
     var watcher = setup();
 
-    watcher.sw_zk.res['/c1'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c1'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.1' }
     });
-    watcher.sw_zk.res['/c2'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c2'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.2' }
     });
 
     t.comment('adding c1');
-    watcher.childrenChanged(['c1']);
+    watcher.nodesChanged('/p/manta', ['c1']);
 
     // wait for the first notification, then proceed
     setTimeout(function () {
@@ -129,10 +128,10 @@ tap.test('test no net change', function (t) {
 
         setTimeout(function () {
             t.comment('adding c2');
-            watcher.childrenChanged(['c1', 'c2']);
+            watcher.nodesChanged('/p/manta', ['c1', 'c2']);
             setTimeout(function () {
                 t.comment('back to just c1');
-                watcher.childrenChanged(['c1']);
+                watcher.nodesChanged('/p/manta', ['c1']);
             }, 100);
         }, 100);
     }, COLLECTION_TIMEOUT + 300);
@@ -142,18 +141,18 @@ tap.test('test no net change', function (t) {
 tap.test('test hold time', function (t) {
     var watcher = setup();
 
-    watcher.sw_zk.res['/c1'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c1'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.1' }
     });
-    watcher.sw_zk.res['/c2'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c2'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.2' }
     });
-    watcher.sw_zk.res['/c3'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c3'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.3' }
     });
 
     t.comment('adding c1, c2');
-    watcher.childrenChanged(['c1', 'c2']);
+    watcher.nodesChanged('/p/manta', ['c1', 'c2']);
 
     var ok = false;
 
@@ -170,7 +169,7 @@ tap.test('test hold time', function (t) {
 
         setTimeout(function () {
             t.comment('removing c2');
-            watcher.childrenChanged(['c1']);
+            watcher.nodesChanged('/p/manta', ['c1']);
             t.comment('expecting c2 to stay');
 
             setTimeout(function () {
@@ -182,13 +181,13 @@ tap.test('test hold time', function (t) {
 
 });
 
-tap.test('test non-host children', function (t) {
+tap.test('test non-host nodes', function (t) {
     var watcher = setup();
 
-    watcher.sw_zk.res['/c1'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c1'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.1' }
     });
-    watcher.sw_zk.res['/c2'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c2'] = JSON.stringify({
         type: 'load_balancer', host: { address: '127.0.0.2' }
     });
 
@@ -199,19 +198,60 @@ tap.test('test non-host children', function (t) {
     });
 
     t.comment('adding load_balancer c2');
-    watcher.childrenChanged(['c1', 'c2']);
+    watcher.nodesChanged('/p/manta', ['c1', 'c2']);
+});
+
+tap.test('test buckets-api nodes', function (t) {
+    var watcher = setup();
+
+    watcher.sw_zk.res['/p/manta/c1'] = JSON.stringify({
+        type: 'host', host: { address: '127.0.0.1' }
+    });
+    watcher.sw_zk.res['/p/manta/c2'] = JSON.stringify({
+        type: 'load_balancer', host: { address: '127.0.0.2' }
+    });
+    watcher.sw_zk.res['/p/buckets-api/c3'] = JSON.stringify({
+        type: 'load_balancer', 'load_balancer': {
+            address: '127.0.0.3', ports: [ '8081', '8082' ]
+        }
+    });
+    watcher.sw_zk.res['/p/buckets-api/c4'] = JSON.stringify({
+        type: 'load_balancer', 'load_balancer': {
+            address: '127.0.0.4', ports: [ '8081', '8082' ]
+        }
+    });
+
+    watcher.on('serversChanged', function (servers) {
+        t.equal(servers['c1'].address, '127.0.0.1');
+        t.equal(servers['c1'].kind, 'webapi');
+        t.notOk(servers['c2']);
+        t.equal(servers['c3'].address, '127.0.0.3');
+        t.equal(servers['c3'].kind, 'buckets-api');
+        t.equal(servers['c3'].ports[0], '8081');
+        t.equal(servers['c3'].ports[1], '8082');
+        t.equal(servers['c4'].address, '127.0.0.4');
+        t.equal(servers['c4'].kind, 'buckets-api');
+        t.equal(servers['c4'].ports[0], '8081');
+        t.equal(servers['c4'].ports[1], '8082');
+        t.done();
+    });
+
+    t.comment('adding manta load_balancer c2, buckets-api c3, c4');
+
+    watcher.nodesChanged('/p/manta', [ 'c1', 'c2' ]);
+    watcher.nodesChanged('/p/buckets-api', [ 'c3', 'c4' ]);
 });
 
 tap.test('test NO_NODE response', function (t) {
     var watcher = setup();
 
-    watcher.sw_zk.res['/c1'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c1'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.1' }
     });
-    watcher.sw_zk.res_no_node['/c2'] = true;
+    watcher.sw_zk.res_no_node['/p/manta/c2'] = true;
 
     t.comment('adding c1, NO_NODE c2');
-    watcher.childrenChanged(['c1', 'c2']);
+    watcher.nodesChanged('/p/manta', ['c1', 'c2']);
 
     watcher.on('serversChanged', function (servers) {
         t.equal(servers['c1'].address, '127.0.0.1');
@@ -223,76 +263,73 @@ tap.test('test NO_NODE response', function (t) {
 tap.test('test ZK error response', function (t) {
     var watcher = setup();
 
-    watcher.sw_zk.res['/c1'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c1'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.1' }
     });
-    watcher.sw_zk.res['/c2'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c2'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.2' }
     });
-    watcher.sw_zk.res['/c3'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c3'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.3' }
     });
 
-    watcher.sw_zk.res_error['/c2'] = 'lost connection';
+    watcher.sw_zk.res_error['/p/manta/c2'] = 'lost connection';
 
     t.comment('adding c1, c2, c3');
-    watcher.childrenChanged(['c1', 'c2', 'c3']);
+    watcher.nodesChanged('/p/manta', ['c1', 'c2', 'c3']);
 
     watcher.on('serversChanged', function (servers) {
         t.comment('serversChanged arrived');
         t.equal(servers['c1'].address, '127.0.0.1');
         t.equal(servers['c2'].address, '127.0.0.2');
         t.equal(servers['c3'].address, '127.0.0.3');
-        t.notOk(watcher.sw_zk.res_error['/c2']);
+        t.notOk(watcher.sw_zk.res_error['/p/manta/c2']);
         t.done();
     });
 
     t.comment('running in ZK failure mode');
     setTimeout(function () {
         t.comment('fixing up ZK to work again');
-        watcher.sw_zk.res_error['/c2'] = undefined;
+        watcher.sw_zk.res_error['/p/manta/c2'] = undefined;
     }, COLLECTION_TIMEOUT + 300);
 });
 
 tap.test('test removal throttle', {timeout: 40000}, function (t) {
     var watcher = setup();
 
-    watcher.sw_zk.res['/c1'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c1'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.1' }
     });
-    watcher.sw_zk.res['/c2'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c2'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.2' }
     });
-    watcher.sw_zk.res['/c3'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c3'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.3' }
     });
-    watcher.sw_zk.res['/c4'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c4'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.4' }
     });
-    watcher.sw_zk.res['/c5'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c5'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.5' }
     });
-    watcher.sw_zk.res['/c5'] = JSON.stringify({
-        type: 'host', host: { address: '127.0.0.5' }
-    });
-    watcher.sw_zk.res['/c6'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c6'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.6' }
     });
-    watcher.sw_zk.res['/c7'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c7'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.7' }
     });
-    watcher.sw_zk.res['/c8'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c8'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.8' }
     });
-    watcher.sw_zk.res['/c9'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c9'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.9' }
     });
-    watcher.sw_zk.res['/ca'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/ca'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.10' }
     });
 
     t.comment('adding c1-ca');
-    watcher.childrenChanged(['c1', 'c2', 'c3', 'c4', 'c5',
+    watcher.nodesChanged('/p/manta', ['c1', 'c2', 'c3', 'c4', 'c5',
         'c6', 'c7', 'c8', 'c9', 'ca']);
 
     // NB: this is relying on removal sort ordering by name
@@ -321,7 +358,7 @@ tap.test('test removal throttle', {timeout: 40000}, function (t) {
         });
 
         t.comment('removing c2-ca');
-        watcher.childrenChanged(['c1']);
+        watcher.nodesChanged('/p/manta', ['c1']);
 
     }, COLLECTION_TIMEOUT + 300);
 });
@@ -329,42 +366,39 @@ tap.test('test removal throttle', {timeout: 40000}, function (t) {
 tap.test('test last seen removal ordering', function (t) {
     var watcher = setup();
 
-    watcher.sw_zk.res['/c1'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c1'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.1' }
     });
-    watcher.sw_zk.res['/c2'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c2'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.2' }
     });
-    watcher.sw_zk.res['/c3'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c3'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.3' }
     });
-    watcher.sw_zk.res['/c4'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c4'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.4' }
     });
-    watcher.sw_zk.res['/c5'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c5'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.5' }
     });
-    watcher.sw_zk.res['/c5'] = JSON.stringify({
-        type: 'host', host: { address: '127.0.0.5' }
-    });
-    watcher.sw_zk.res['/c6'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c6'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.6' }
     });
-    watcher.sw_zk.res['/c7'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c7'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.7' }
     });
-    watcher.sw_zk.res['/c8'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c8'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.8' }
     });
-    watcher.sw_zk.res['/c9'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/c9'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.9' }
     });
-    watcher.sw_zk.res['/ca'] = JSON.stringify({
+    watcher.sw_zk.res['/p/manta/ca'] = JSON.stringify({
         type: 'host', host: { address: '127.0.0.10' }
     });
 
     t.comment('adding c1-ca');
-    watcher.childrenChanged(['c1', 'c2', 'c3', 'c4', 'c5',
+    watcher.nodesChanged('/p/manta', ['c1', 'c2', 'c3', 'c4', 'c5',
         'c6', 'c7', 'c8', 'c9', 'ca']);
 
     // NB: this is relying on removal sort ordering by name as well as last seen
@@ -393,7 +427,7 @@ tap.test('test last seen removal ordering', function (t) {
         function (_, cb) {
             setTimeout(function () {
                 t.comment('remove c5-c7');
-                watcher.childrenChanged(['c1', 'c2', 'c3', 'c4',
+                watcher.nodesChanged('/p/manta', ['c1', 'c2', 'c3', 'c4',
                     'c8', 'c9', 'ca']);
                 cb();
             }, COLLECTION_TIMEOUT + 300);
@@ -401,7 +435,7 @@ tap.test('test last seen removal ordering', function (t) {
         function (_, cb) {
             setTimeout(function () {
                 t.comment('remove c2-c4');
-                watcher.childrenChanged(['c1', 'c8', 'c9', 'ca']);
+                watcher.nodesChanged('/p/manta', ['c1', 'c8', 'c9', 'ca']);
                 cb();
             }, COLLECTION_TIMEOUT + 300);
         }

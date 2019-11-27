@@ -13,192 +13,80 @@ apisections:
     Copyright 2019 Joyent, Inc.
 -->
 
-# tl;dr
-
-muppet is a custom loadbalancing solution with a haproxy, stud (for SSL
-termination) and a daemon that watches group membership changes in ZooKeeper.
-
 # Overview
 
-The loadbalancer can actually be used without the ZooKeeper tie-in, as the ZK
-logic is self-contained in a separate process (muppet).  To use the loadbalancer
-you'll want stud (available via pkgsrc) installed and configured, and then you
-can create a loadbalancer configuration (see below) that fronts your backend
-servers.
+This repository builds the "manta-loadbalancer" image that is the public access
+point of a Manta installation (such as `https://manta.region.example.com/`).
+Multiple instances can be configured and are themselves load-balanced on the
+client side via DNS lookup.
 
-In manta at least, all configuration of the load balancer is automatically
-managed by the muppet service, which watches for registrar changes in ZooKeeper.
-This updates the upstream server list of IP addresses and refreshes the haproxy
-loadbalancer service.
-
-# Configuration
-
-## Stud
-
-This configuration assumes that stud is going to listen on 443, and proxy to
-`127.0.0.1:8443`; note that `sendproxy` must be turned on, as the loadbalancer
-assumes the remote IP address is sent over by stud.
-
-    #
-    # stud(8), The Scalable TLS Unwrapping Daemon's configuration
-    #
-
-    # NOTE: all config file parameters can be overriden
-    #       from command line!
-
-    # Listening address. REQUIRED.
-    #
-    # type: string
-    # syntax: [HOST]:PORT
-    frontend = "[*]:443"
-
-    # Upstream server address. REQUIRED.
-    #
-    # type: string
-    # syntax: [HOST]:PORT.
-    backend = "[127.0.0.1]:8443"
-
-    # SSL x509 certificate file. REQUIRED.
-    # List multiple certs to use SNI. Certs are used in the order they
-    # are listed; the last cert listed will be used if none of the others match
-    #
-    # type: string
-    pem-file = /opt/local/etc/server.pem
-
-    # SSL protocol.
-    #
-    tls = on
-    ssl = on
-
-    # List of allowed SSL ciphers.
-    #
-    # Run openssl ciphers for list of available ciphers.
-    # type: string
-    ciphers = ""
-
-    # Enforce server cipher list order
-    #
-    # type: boolean
-    prefer-server-ciphers = on
-
-    # Use specified SSL engine
-    #
-    # type: string
-    ssl-engine = ""
-
-    # Number of worker processes
-    #
-    # type: integer
-    workers = 4
-
-    # Listen backlog size
-    #
-    # type: integer
-    backlog = 100
-
-    # TCP socket keepalive interval in seconds
-    #
-    # type: integer
-    keepalive = 3600
-
-    # Chroot directory
-    #
-    # type: string
-    chroot = ""
-
-    # Set uid after binding a socket
-    #
-    # type: string
-    user = "stud"
-
-    # Set gid after binding a socket
-    #
-    # type: string
-    group = "stud"
-
-    # Quiet execution, report only error messages
-    #
-    # type: boolean
-    quiet = off
-
-    # Use syslog for logging
-    #
-    # type: boolean
-    syslog = off
-
-    # Syslog facility to use
-    #
-    # type: string
-    syslog-facility = "daemon"
-
-    # Run as daemon
-    #
-    # type: boolean
-    daemon = on
-
-    # Report client address by writing IP before sending data
-    #
-    # NOTE: This option is mutually exclusive with option write-proxy and proxy-proxy.
-    #
-    # type: boolean
-    write-ip = off
-
-    # Report client address using SENDPROXY protocol, see
-    # http://haproxy.1wt.eu/download/1.5/doc/proxy-protocol.txt
-    # for details.
-    #
-    # NOTE: This option is mutually exclusive with option write-ip and proxy-proxy.
-    #
-    # type: boolean
-    write-proxy = on
-
-    # Proxy an existing SENDPROXY protocol header through this request.
-    #
-    # NOTE: This option is mutually exclusive with option write-ip and write-proxy.
-    #
-    # type: boolean
-    proxy-proxy = off
-
-
-### Generate an OpenSSL Certificate
-
-Run this command:
-
-    $ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-        -keyout /opt/local/etc/server.pem -out /opt/local/etc/server.pem \
-        -subj "/C=US/ST=CA/O=Joyent/OU=manta/CN=localhost"
+Each instance runs `haproxy`, which routes requests to the backend servers,
+and `muppet`, which manages `haproxy` configuration.
 
 ## Load Balancer
 
-The loadbalancer used is [HAProxy](http://www.haproxy.org/), but a [fork
-maintained by Joyent](https://github.com/joyent/haproxy-1.8), with a patch to
-use Event Ports. There is an `haproxy.cfg.in` file that is templated with a
-sparse number of `%s`; this file is used to generate a new haproxy.cfg each time
-the topology of online loadbalancers changes.
+The loadbalancer used is [HAProxy](http://www.haproxy.org/).
 
-*Important:* Checked into this repo is a "blank" haproxy.cfg.default - *DO NOT
-EDIT THIS FILE!*, except in the case you need the default behaviour to change.
-That file is used as a syntactically correct, but empty haproxy.cfg file that we
-use to bootstrap haproxy _before_ muppet is running.  Any changes you want to
-see made to haproxy.cfg must be made in the template file, as that's what you
-really care about.
+Requests are routed to either [webapi](https://github.com/joyent/manta-muskie/)
+or [buckets-api](https://github.com/joyent/manta-buckets-api) API server
+instances as needed.  All `http` requests not matching the route
+`/:login/buckets/` are considered to be directory-style requests.
+
+*Important:* `muppet` is in control of the actual live configuration, and any
+configuration changes should be made there. In particular, modifications of the
+live `/opt/smartdc/muppet/etc/haproxy.cfg` may be over-written by `muppet` at
+will.
+
+`haproxy` is configured to handle SSL termination. The certificate used is
+managed by `config-agent`, and can be updated in the Manta deployment zone using
+[manta-replace-cert](https://github.com/joyent/sdc-manta/blob/master/cmd/manta-replace-cert.js).
+This updates the SAPI metadata key `SSL_CERTIFICATE`, and be used without
+interrupting loadbalancer service.
+
+`haproxy` is set up to log (via syslog) to `/var/log/haproxy.log` in a format
+that apes [bunyan](https://github.com/trentm/node-bunyan), to allow use of the
+`bunyan(1)` CLI, `tail -f /var/log/haproxy | json -ga`, etc. Only the request
+header `x-request-id` is logged. The meaning of the fields can be found in the
+[haproxy configuration
+manual](https://cbonte.github.io/haproxy-dconv/2.0/configuration.html). They're
+generally self explanatory, except:
+
+ - `time`: this is the timestamp haproxy received the first byte of the request
+ - `retries`: count of server connection retries
+ - `res_bytes_read`: size of response to client
+ - `timers.req`: request read time, excluding request body (%TR)
+ - `timers.queued`: time queued in haproxy (%Tw)
+ - `timers.server_conn`: server connection time (%Tc)
+ - `timers.res`: time for server response, excluding response body (%Tr)
+ - `timers.total`: total request-to-response time, including body (%Ta)
+
+See [Timing
+events](https://cbonte.github.io/haproxy-dconv/2.0/configuration.html#8.4) for
+handy ASCII art on the timer's exact meanings.
 
 ## Muppet
 
-*name* is really the important variable here, as that dicatates the path in
-ZooKeeper to watch (note the DNS name is reversed and turned into a `/`
-separated path); entries should have been written there by `registrar`.
+There is an `haproxy.cfg.in` template file; this is used by `muppet` to generate
+a new `haproxy.cfg` each time the topology of online API servers changes.
 
-    {
-        "name": "manta.bh1-kvm1.joyent.us",
-        "srvce": "_http",
-        "proto": "_tcp",
-        "port": 80,
-        "zookeeper": {
-            "servers": [ {
-                "host": "10.2.201.66",
-                "port": 2181
-            } ],
-            "timeout": 1000
-        }
-    }
+The `muppet` daemon directly connects to the
+[registrar](https://github.com/joyent/registrar) Zookeeper set up looking for
+changes to nodes under the `manta` (for `webapi`) or `buckets-api` path.  As
+backend servers come and go, the `haproxy` backend server configuration is
+updated as needed. If possible, we dynamically disable/enable the servers by
+talking to the `haproxy` management interface; if not, then we refresh
+`haproxy`, which starts a new child process without interrupting existing
+connections.
+
+Note that `haproxy` itself is configured to do basic health checks on the
+backend servers, and will retire use of any unhealthy servers.
+
+## SAPI configuration
+
+The metadata key `SSL_CERTIFICATE` of the loadbalancer SAPI service should
+contain the text of the private key used as the `haproxy` certificate; see
+above.
+
+The metadata key `HAPROXY_NBTHREAD` defines the number of `haproxy` worker
+threads. The default is `20`. Changing this requires restarting `muppet` but
+shouldn't interrupt `haproxy` service.

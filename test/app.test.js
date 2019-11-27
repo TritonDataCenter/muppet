@@ -34,6 +34,12 @@ tap.afterEach(function (cb, t) {
 tap.test('app.checkStats no-server', function (t) {
     const servers = {
         '4afa9ff4-d918-42ed-9972-9ac20b7cf869': {
+            'kind': 'webapi',
+            'enabled': true,
+            'address': '127.0.0.1'
+        },
+        'cdf37eb6-090a-4e68-8282-90e99c6bb04d': {
+            'kind': 'buckets-api',
             'enabled': true,
             'address': '127.0.0.1'
         }
@@ -61,12 +67,19 @@ tap.test('app.checkStats no-server', function (t) {
 tap.test('app.checkStats addr-mismatch', function (t) {
     const servers = {
         '4afa9ff4-d918-42ed-9972-9ac20b7cf869': {
+            'kind': 'webapi',
             'enabled': true,
             'address': '127.0.0.1'
         },
         '5c679a71-9ef7-4079-9a4c-45c9f5b97d45': {
+            'kind': 'webapi',
             'enabled': true,
             'address': '127.0.0.2'
+        },
+        'cdf37eb6-090a-4e68-8282-90e99c6bb04d': {
+            'kind': 'buckets-api',
+            'enabled': true,
+            'address': '127.0.0.1'
         }
     };
 
@@ -90,11 +103,18 @@ tap.test('app.checkStats addr-mismatch', function (t) {
 tap.test('app.checkStats want-disabled', function (t) {
     const servers = {
         '4afa9ff4-d918-42ed-9972-9ac20b7cf869': {
+            'kind': 'webapi',
             'enabled': true,
             'address': '127.0.0.1'
         },
         '5c679a71-9ef7-4079-9a4c-45c9f5b97d45': {
+            'kind': 'webapi',
             'enabled': false,
+            'address': '127.0.0.1'
+        },
+        'cdf37eb6-090a-4e68-8282-90e99c6bb04d': {
+            'kind': 'buckets-api',
+            'enabled': true,
             'address': '127.0.0.1'
         }
     };
@@ -119,11 +139,18 @@ tap.test('app.checkStats want-disabled', function (t) {
 tap.test('app.checkStats want-enabled', function (t) {
     const servers = {
         '4afa9ff4-d918-42ed-9972-9ac20b7cf869': {
+            'kind': 'webapi',
             'enabled': true,
             'address': '127.0.0.1'
         },
         '5c679a71-9ef7-4079-9a4c-45c9f5b97d45': {
+            'kind': 'webapi',
             'enabled': false,
+            'address': '127.0.0.1'
+        },
+        'cdf37eb6-090a-4e68-8282-90e99c6bb04d': {
+            'kind': 'buckets-api',
+            'enabled': true,
             'address': '127.0.0.1'
         }
     };

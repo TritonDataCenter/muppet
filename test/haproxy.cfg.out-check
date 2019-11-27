@@ -1,13 +1,28 @@
+# same as etc/haproxy.cfg.in, except able to use for unit tests
+
 global
-        log 127.0.0.1 local0
+        # have haproxy launch a worker process, SMF monitors the master, part of
+        # seamless config reload (via SMF refresh method)
+        master-worker
+        # maximum of 10 reloads before killing old workers
+        mworker-max-reloads 10
+        # hard-coded for testing
+        nbthread 1
+        log 127.0.0.1 len 4096 local0
+        tune.http.logurilen 3072
         user nobody
         group nobody
         daemon
         maxconn 65535
         pidfile /var/run/haproxy.pid
-        log-send-hostname foo
-        stats socket /tmp/haproxy mode 0600 level admin
+        # expose-fd listeners also required for seamless config reload
+        stats socket /tmp/haproxy mode 0600 level admin expose-fd listeners
+        tune.ssl.default-dh-param 2048
+        ssl-default-bind-options ssl-min-ver TLSv1.2 no-tls-tickets
 
+        # intermediate config from https://ssl-config.mozilla.org/, plus
+        # the last four to match java-manta's cipher list
+        ssl-default-bind-ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-SHA:AES128-GCM-SHA256:AES256-SHA256:AES128-SHA256
 
 defaults
         balance leastconn
@@ -15,8 +30,8 @@ defaults
         maxconn 65535
         mode http
         option forwardfor
-        option http-tunnel
         option httplog
+        # log-format not specified for testing
         option redispatch
         no option httpclose
         no option http-server-close
@@ -24,6 +39,21 @@ defaults
         timeout client  120000
         timeout connect 2000
         timeout server  240000
+        # may not exist on test system, so disabled
+        # errorfile 400 /opt/smartdc/muppet/etc/400.http
+        # errorfile 408 /opt/smartdc/muppet/etc/408.http
+        # errorfile 500 /opt/smartdc/muppet/etc/503.http
+        # errorfile 502 /opt/smartdc/muppet/etc/503.http
+        # errorfile 503 /opt/smartdc/muppet/etc/503.http
+        # errorfile 504 /opt/smartdc/muppet/etc/503.http
+
+backend buckets_api
+        option httpchk GET /ping
+        server baz.joyent.us:8081 127.0.0.3:8081 check inter 30s slowstart 10s
+        server baz.joyent.us:8082 127.0.0.3:8082 check inter 30s slowstart 10s
+        server baz.joyent.us:8083 127.0.0.3:8083 check inter 30s slowstart 10s
+        server baz.joyent.us:8084 127.0.0.3:8084 check inter 30s slowstart 10s
+
 
 backend secure_api
         option httpchk GET /ping
@@ -43,8 +73,12 @@ backend haproxy-stats_http
         stats uri /
 
 frontend https
-        bind 127.0.0.1:8443 accept-proxy
+        http-request capture req.hdr(x-request-id) len 36
+        acl acl_bucket path_reg ^/[^/]+/buckets
+        use_backend buckets_api if acl_bucket
         default_backend secure_api
+        # ssl disabled for testing purposes
+        bind *:443 # ssl crt /opt/smartdc/muppet/etc/ssl.pem
 
 frontend http_external
         default_backend insecure_api
@@ -53,10 +87,9 @@ frontend http_external
 
 
 frontend http_internal
-        bind 127.0.0.1:80
         default_backend secure_api
-
+        bind 127.0.0.1:80
 
 frontend stats_http
-         bind 127.0.0.1:8080
-         default_backend haproxy-stats_http
+        default_backend haproxy-stats_http
+        bind 127.0.0.1:8080

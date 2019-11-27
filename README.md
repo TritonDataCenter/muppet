@@ -16,8 +16,11 @@ documentation, visit the main [SDC](http://github.com/joyent/sdc) and
 [Manta](http://github.com/joyent/manta) project pages.
 
 Muppet is an HTTP loadbalancer (haproxy) and small daemon that interacts with
-ZooKeeper via registrar.  The muppet daemon will update the loadbalancer with
-new configuration as hosts come and go from the given service name.
+ZooKeeper via [registrar](https://github.com/joyent/registrar).  The muppet
+daemon will update the loadbalancer as backend servers come and go.
+
+See the [documentation](https://github.com/joyent/muppet/docs/index.md) for
+more details.
 
 # Development
 

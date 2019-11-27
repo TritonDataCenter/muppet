@@ -18,14 +18,10 @@ var vasync = require('vasync');
 ///--- Globals
 var log = helper.createLogger();
 
-// The good file to test against
-var haproxy_good = path.resolve(__dirname, 'haproxy.cfg.good');
-
 // Files that have a bad config in some way
 var haproxy_no_listener = path.resolve(__dirname, 'haproxy.cfg.no-listener');
 var haproxy_empty_error = path.resolve(__dirname, 'haproxy.cfg.empty');
 var haproxy_parse_error = path.resolve(__dirname, 'haproxy.cfg.parse-error');
-var haproxy_no_frontend = path.resolve(__dirname, 'haproxy.cfg.no-frontend');
 
 // File for writeHaproxyConfig to write out
 var updConfig_out = path.resolve(__dirname, 'haproxy.cfg.out');
@@ -48,7 +44,7 @@ var haproxy_exec = path.resolve(__dirname, '../build/haproxy/sbin/haproxy');
 tap.test('test good config file', function (t) {
     var opts = { log: helper.createLogger(),
         haproxyExec: haproxy_exec,
-        configFile: haproxy_good};
+        configFile: updConfig_out_chk};
     lbm.checkHaproxyConfig(opts, function (err) {
         t.equal(null, err);
         t.done();
@@ -85,23 +81,25 @@ tap.test('test parse error config file (should error)', function (t) {
     });
 });
 
-tap.test('test no-frontend config file (should error)', function (t) {
-    var opts = { log: helper.createLogger(),
-        haproxyExec: haproxy_exec,
-        configFile: haproxy_no_frontend};
-    lbm.checkHaproxyConfig(opts, function (err) {
-        t.ok(err);
-        t.done();
-    });
-});
-
 tap.test('test writeHaproxyConfig', function (t) {
     var opts = {
         trustedIP: '127.0.0.1',
         untrustedIPs: ['::1', '255.255.255.255'],
+        haproxy: { 'nbthread': 1 },
         servers: {
-            'foo.joyent.us': { address: '127.0.0.1' },
-            'bar.joyent.us': { address: '127.0.0.2' }
+            'foo.joyent.us': {
+                kind: 'webapi',
+                address: '127.0.0.1'
+            },
+            'bar.joyent.us': {
+                kind: 'webapi',
+                address: '127.0.0.2'
+            },
+            'baz.joyent.us': {
+                kind: 'buckets-api',
+                address: '127.0.0.3',
+                ports: [ '8081', '8082', '8083', '8084' ]
+            }
         },
         configFile: updConfig_out,
         haproxyExec: haproxy_exec,
@@ -117,13 +115,10 @@ tap.test('test writeHaproxyConfig', function (t) {
 
         diff.forEach(function (part) {
             if (part.added) {
-                if (! part.value.includes('log-send-hostname')) {
-                    t.equal(null, part.value);
-                }
+                t.equal(null, part.value);
             } else if (part.removed) {
-                if ((! part.value.includes('log-send-hostname')) &&
-                    // the input cfg is commented
-                    (! part.value.startsWith('#'))) {
+                // the input cfg is commented
+                if (!part.value.startsWith('#')) {
                     t.equal(null, part.value);
                 }
             }
@@ -138,6 +133,7 @@ tap.test('test writeHaproxyConfig bad config (should error)', function (t) {
     var opts = {
         trustedIP: '',
         untrustedIPs: [],
+        haproxy: { 'nbthread': 1 },
         servers: {},
         configFile: updConfig_out,
         haproxyExec: haproxy_exec,
@@ -158,6 +154,7 @@ tap.test('test reload', function (t) {
     var opts = {
         trustedIP: '127.0.0.1',
         untrustedIPs: ['::1', '255.255.255.255'],
+        haproxy: { 'nbthread': 1 },
         servers: { 'foo.joyent.us': { address: '127.0.0.1' } },
         reload: '/bin/true',
         haproxyExec: haproxy_exec,
@@ -183,6 +180,7 @@ tap.test('test reload bad config (should error)', function (t) {
     var opts = {
         trustedIP: '127.0.0.1',
         untrustedIPs: ['::1', '255.255.255.255'],
+        haproxy: { 'nbthread': 1 },
         servers: {},
         reload: '/bin/true',
         haproxyExec: haproxy_exec,
@@ -204,9 +202,10 @@ tap.test('test dueling reloads', function (t) {
     var opts = {
         trustedIP: '127.0.0.1',
         untrustedIPs: ['::1', '255.255.255.255'],
+        haproxy: { 'nbthread': 1 },
         servers: {
-            'foo.joyent.us': { 'address': '127.0.0.1' },
-            'bar.joyent.us': { 'address': '127.0.0.1' }
+            'foo.joyent.us': { kind: 'webapi', address: '127.0.0.1' },
+            'bar.joyent.us': { kind: 'webapi', address: '127.0.0.1' }
         },
         reload: '/bin/sleep 2',
         haproxyExec: haproxy_exec,
@@ -217,7 +216,8 @@ tap.test('test dueling reloads', function (t) {
     var opts2 = {
         trustedIP: '127.0.0.1',
         untrustedIPs: ['::1', '255.255.255.255'],
-        servers: { 'foo.joyent.us': { 'address': '127.0.0.1' } },
+        haproxy: { 'nbthread': 1 },
+        servers: { 'foo.joyent.us': { kind: 'webapi', address: '127.0.0.1' } },
         reload: '/bin/true',
         haproxyExec: haproxy_exec,
         configTemplate: haproxy_template,
