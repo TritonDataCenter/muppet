@@ -5,9 +5,9 @@
 /build
 docs/*.json
 docs/*.html
-etc/haproxy.cfg
 cscope.in.out
 cscope.po.out
 cscope.out
 smf/manifests/*.xml
+test/haproxy.cfg
 /*.tar.gz
