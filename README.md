@@ -10,14 +10,26 @@
 
 # muppet
 
-This repository is part of the Joyent SmartDataCenter project (SDC), and the
-Joyent Manta project.  For contribution guidelines, issues, and general
-documentation, visit the main [SDC](http://github.com/joyent/sdc) and
+This repository is part of the Joyent Triton and Manta projects.
+For contribution guidelines, issues, and general documentation, visit the main
+[Triton](http://github.com/joyent/triton) and
 [Manta](http://github.com/joyent/manta) project pages.
 
 Muppet is an HTTP loadbalancer (haproxy) and small daemon that interacts with
 ZooKeeper via registrar.  The muppet daemon will update the loadbalancer with
 new configuration as hosts come and go from the given service name.
+
+## Active Branches
+
+There are currently two active branches of this repository, for the two
+active major versions of Manta. See the [mantav2 overview
+document](https://github.com/joyent/manta/blob/master/docs/mantav2.md) for
+details on major Manta versions.
+
+- [`master`](../../tree/master/) - For development of mantav2, the latest
+  version of Manta. This is the version used by Triton.
+- [`mantav1`](../../tree/mantav1/) - For development of mantav1, the long
+  term support maintenance version of Manta.
 
 # Development
 
