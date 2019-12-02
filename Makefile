@@ -72,7 +72,7 @@ RELSTAGEDIR			:= /tmp/$(NAME)-$(STAMP)
 
 # our base image is triton-origin-x86_64-18.4.0
 BASE_IMAGE_UUID = a9368831-958e-432d-a031-f8ce6768d190
-BUILDIMAGE_NAME = manta-loadbalancer
+BUILDIMAGE_NAME = mantav1-loadbalancer
 BUILDIMAGE_DESC	= Manta loadbalancer
 BUILDIMAGE_PKGSRC = openssl-1.0.2p
 AGENTS		= amon config registrar
