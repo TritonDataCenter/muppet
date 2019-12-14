@@ -26,11 +26,27 @@ export PATH=$SVC_ROOT/build/node/bin:/opt/local/bin:/usr/sbin/:/usr/bin:$PATH
 
 MUPPET_CFG=$SVC_ROOT/etc/config.json
 
+#
+# This is an arbitrary value
+#
+METRICS_PORT=9090
 
 function manta_setup_muppet {
-    svccfg import /opt/smartdc/muppet/smf/manifests/muppet.xml
-    svcadm enable muppet
-    [[ $? -eq 0 ]] || fatal "Unable to start muppet"
+    local metrics_port=${METRICS_PORT}
+    local muppet_smf_xml_manifest_in="${SVC_ROOT}/smf/manifests/muppet.xml.in"
+    local muppet_smf_xml_manifest_out="${SVC_ROOT}/smf/manifests/muppet.xml"
+
+    sed -e "s#@@MUPPET-METRICS_PORT@@#$metrics_port#g" \
+        ${muppet_smf_xml_manifest_in} > ${muppet_smf_xml_manifest_out} || \
+        fatal "Could not process ${muppet_smf_xml_manifest_in} to ${muppet_smf_xml_manifest_out}"
+
+    svccfg import ${muppet_smf_xml_manifest_out} || \
+        fatal "Could not import: ${muppet_smf_xml_manifest_out}"
+
+    svcadm enable muppet || \
+        fatal "Unable to start muppet"
+
+    mdata-put metricPorts ${metrics_port}
 }
 
 

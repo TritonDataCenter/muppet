@@ -47,6 +47,12 @@ function configure() {
             type: 'string',
             help: 'File to process',
             helpArg: 'FILE'
+        },
+        {
+            names: ['metricsPort', 'm'],
+            type: 'number',
+            help: 'Metrics port',
+            helpArg: 'PORT'
         }
     ];
 
@@ -96,6 +102,15 @@ function configure() {
 
     if (cfg.logLevel)
         log.level(cfg.logLevel);
+
+    if (opts.metricsPort) {
+        if (isNaN(opts.metricsPort)) {
+            log.fatal('invalid metrics port specified: %s', opts.metricsPort);
+            process.exit(1);
+        }
+
+        cfg.metricsPort = parseInt(opts.metricsPort, 10);
+    }
 
     if (opts.verbose) {
         opts.verbose.forEach(function () {
