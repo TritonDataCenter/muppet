@@ -67,7 +67,8 @@ backend haproxy-stats_http
 frontend https
         http-request capture req.hdr(x-request-id) len 36
         acl acl_bucket path_reg ^/[^/]+/buckets
-        use_backend buckets_api if acl_bucket
+        # force a 404 response in mantav1
+        # use_backend buckets_api if acl_bucket
         default_backend secure_api
         # ssl disabled for testing purposes
         bind *:443 # ssl crt /opt/smartdc/muppet/etc/ssl.pem
