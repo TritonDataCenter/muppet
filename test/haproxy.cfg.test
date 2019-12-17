@@ -58,7 +58,8 @@ backend insecure_api
 
 frontend https
         acl acl_bucket path_reg ^/[^/]+/buckets
-        use_backend buckets_api if acl_bucket
+        # force a 404 response in mantav1
+        # use_backend buckets_api if acl_bucket
         default_backend secure_api
         bind 127.0.0.1:6443 ssl crt /tmp/haproxy.test.pem
 
