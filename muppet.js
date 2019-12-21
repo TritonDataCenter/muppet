@@ -103,13 +103,21 @@ function configure() {
     if (cfg.logLevel)
         log.level(cfg.logLevel);
 
+    var MIN_USER_PORT = 1024;
+    var MAX_USER_PORT = 49151;
+
     if (opts.metricsPort) {
-        if (isNaN(opts.metricsPort)) {
-            log.fatal('invalid metrics port specified: %s', opts.metricsPort);
+        if (!Number.isInteger(opts.metricsPort) ||
+            opts.metricsPort < MIN_USER_PORT ||
+            opts.metricsPort > MAX_USER_PORT) {
+
+            log.fatal('invalid metrics port specified: %s. ' +
+                'Please specify a valid port in the range [%d - %d]',
+                opts.metricsPort, MIN_USER_PORT, MAX_USER_PORT);
             process.exit(1);
         }
 
-        cfg.metricsPort = parseInt(opts.metricsPort, 10);
+        cfg.metricsPort = opts.metricsPort;
     }
 
     if (opts.verbose) {
