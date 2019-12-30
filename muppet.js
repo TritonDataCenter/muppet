@@ -50,7 +50,7 @@ function configure() {
         },
         {
             names: ['metricsPort', 'm'],
-            type: 'number',
+            type: 'integer',
             help: 'Metrics port',
             helpArg: 'PORT'
         }
@@ -107,8 +107,7 @@ function configure() {
     var MAX_USER_PORT = 49151;
 
     if (opts.metricsPort) {
-        if (!Number.isInteger(opts.metricsPort) ||
-            opts.metricsPort < MIN_USER_PORT ||
+        if (opts.metricsPort < MIN_USER_PORT ||
             opts.metricsPort > MAX_USER_PORT) {
 
             log.fatal('invalid metrics port specified: %s. ' +
