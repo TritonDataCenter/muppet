@@ -45,7 +45,7 @@
 
 	<exec_method type="method"
 		     name="start"
-		     exec="node --abort-on-uncaught-exception muppet.js -f ./etc/config.json &amp;"
+		     exec="node --abort-on-uncaught-exception muppet.js -f ./etc/config.json -m %{muppet/metrics-port} &amp;"
 		     timeout_seconds="30">
 	    <method_context working_directory="/opt/smartdc/muppet">
                 <method_credential user="root"
@@ -64,6 +64,10 @@
 		     name="stop"
 		     exec=":kill"
 		     timeout_seconds="30" />
+
+  <property_group name="muppet" type="application">
+      <propval name="metrics-port" type="astring" value="@@MUPPET-METRICS_PORT@@" />
+  </property_group>
 
 	<template>
 	    <common_name>
