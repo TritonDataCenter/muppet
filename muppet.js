@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright 2019 Joyent, Inc.
+ * Copyright 2020 Joyent, Inc.
  */
 
 /*
@@ -47,6 +47,12 @@ function configure() {
             type: 'string',
             help: 'File to process',
             helpArg: 'FILE'
+        },
+        {
+            names: ['metricsPort', 'm'],
+            type: 'integer',
+            help: 'Metrics port',
+            helpArg: 'PORT'
         }
     ];
 
@@ -96,6 +102,22 @@ function configure() {
 
     if (cfg.logLevel)
         log.level(cfg.logLevel);
+
+    var MIN_USER_PORT = 1024;
+    var MAX_USER_PORT = 49151;
+
+    if (opts.metricsPort) {
+        if (opts.metricsPort < MIN_USER_PORT ||
+            opts.metricsPort > MAX_USER_PORT) {
+
+            log.fatal('invalid metrics port specified: %s. ' +
+                'Please specify a valid port in the range [%d - %d]',
+                opts.metricsPort, MIN_USER_PORT, MAX_USER_PORT);
+            process.exit(1);
+        }
+
+        cfg.metricsPort = opts.metricsPort;
+    }
 
     if (opts.verbose) {
         opts.verbose.forEach(function () {
