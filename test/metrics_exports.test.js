@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright 2019 Joyent, Inc.
+ * Copyright 2020 Joyent, Inc.
  */
 
 /*jsl:ignore*/
@@ -33,7 +33,7 @@ tap.afterEach(function (cb, t) {
 tap.test('start and close metrics server', function (t) {
     var opts = {
         log: bunyan.createLogger({ name: 'dummy' }),
-        mantaIPS: ['127.0.0.1'],
+        adminIPS: ['127.0.0.1'],
         metricsPort: 12421,
         haSock: lib_hasock
     };
@@ -57,7 +57,7 @@ const NUMBER_REG_EXP =
 tap.test('metrics server is producing valid metrics', function (t) {
     var opts = {
         log: bunyan.createLogger({ name: 'dummy' }),
-        mantaIPS: ['127.0.0.1'],
+        adminIPS: ['127.0.0.1'],
         metricsPort: 12421,
         haSock: lib_hasock
     };
@@ -99,7 +99,7 @@ tap.test('metrics server is producing valid metrics', function (t) {
 
         var body = '';
         var reqOpts = {
-            host: opts.mantaIPS[0],
+            host: opts.adminIPS[0],
             port: opts.metricsPort,
             path: '/metrics'
         };
