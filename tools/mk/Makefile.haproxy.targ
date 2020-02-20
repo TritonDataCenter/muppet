@@ -6,7 +6,7 @@
 #
 
 #
-# Copyright 2019 Joyent, Inc.
+# Copyright 2020 Joyent, Inc.
 #
 
 #
@@ -18,10 +18,11 @@ BUILDFLAGS = \
     ADDLIB="-L/opt/local/lib -R/opt/local/lib"
 
 
-$(HAPROXY_EXEC): $(HAPROXY_SRC)/.git
+$(HAPROXY_EXEC): $(HAPROXY_SRC)/.git $(STAMP_CTF_TOOLS)
 	cd $(HAPROXY_SRC) && \
 	    $(MAKE) $(BUILDFLAGS) && \
 	    $(MAKE) install PREFIX=$(TOP)/$(HAPROXY_INSTALL)
+	$(CTFCONVERT) $(HAPROXY_EXEC)
 
 DISTCLEAN_FILES += $(HAPROXY_INSTALL)
 
