@@ -5,7 +5,7 @@
 #
 
 #
-# Copyright 2019 Joyent, Inc.
+# Copyright 2020 Joyent, Inc.
 #
 
 #
@@ -56,6 +56,7 @@ ENGBLD_REQUIRE := $(shell git submodule update --init deps/eng)
 include ./deps/eng/tools/mk/Makefile.defs
 TOP ?= $(error Unable to access eng.git submodule Makefiles.)
 
+include ./deps/eng/tools/mk/Makefile.ctf.defs
 include ./tools/mk/Makefile.haproxy.defs
 include ./deps/eng/tools/mk/Makefile.node_prebuilt.defs
 include ./deps/eng/tools/mk/Makefile.agent_prebuilt.defs
@@ -138,6 +139,7 @@ publish: release
 
 
 include ./deps/eng/tools/mk/Makefile.deps
+include ./deps/eng/tools/mk/Makefile.ctf.targ
 include ./tools/mk/Makefile.haproxy.targ
 include ./deps/eng/tools/mk/Makefile.node_prebuilt.targ
 include ./deps/eng/tools/mk/Makefile.agent_prebuilt.targ
