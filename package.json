@@ -1,7 +1,7 @@
 {
   "name": "muppet",
   "description": "Joyent's Load Balancer",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "author": "Joyent (joyent.com)",
   "private": true,
   "dependencies": {
@@ -13,7 +13,6 @@
     "haproxy-stat": "0.1.0",
     "jsprim": "1.4.0",
     "mooremachine": "2.3.0",
-    "node-uuid": "1.4.1",
     "once": "1.4.0",
     "restify": "5.0.0",
     "sprintf-js": "^1.1.2",
