@@ -78,6 +78,9 @@ BUILDIMAGE_DESC	= Manta loadbalancer
 BUILDIMAGE_PKGSRC = openssl-1.0.2p
 AGENTS		= amon config registrar
 
+# For mantav1, specify the branch to compare copyrights with
+ENGBLD_CHECK_COPYRIGHT_ARGS = -b mantav1
+
 #
 # Repo-specific targets
 #
