@@ -62,6 +62,11 @@ backend haproxy-stats_http
 
 frontend https
         http-request capture req.hdr(x-request-id) len 36
+
+        # Protect against CVE-2021-40346
+        http-request  deny if { req.hdr_cnt(content-length) gt 1 }
+        http-response deny if { res.hdr_cnt(content-length) gt 1 }
+
         acl acl_bucket path_reg ^/[^/]+/buckets
         use_backend buckets_api if acl_bucket
         default_backend secure_api
