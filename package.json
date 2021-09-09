@@ -1,7 +1,7 @@
 {
   "name": "muppet",
   "description": "Joyent's Load Balancer",
-  "version": "1.4.2",
+  "version": "1.4.1",
   "author": "Joyent (joyent.com)",
   "private": true,
   "dependencies": {
