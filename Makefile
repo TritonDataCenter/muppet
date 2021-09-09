@@ -5,7 +5,7 @@
 #
 
 #
-# Copyright 2020 Joyent, Inc.
+# Copyright 2021 Joyent, Inc.
 #
 
 #
@@ -52,6 +52,7 @@ NODE_PREBUILT_TAG=zone64
 NODE_PREBUILT_IMAGE=c2c31b00-1d60-11e9-9a77-ff9f06554b0f
 
 ENGBLD_USE_BUILDIMAGE = true
+ENGBLD_CHECK_COPYRIGHT_ARGS = -b mantav1
 ENGBLD_REQUIRE := $(shell git submodule update --init deps/eng)
 include ./deps/eng/tools/mk/Makefile.defs
 TOP ?= $(error Unable to access eng.git submodule Makefiles.)
