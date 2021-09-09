@@ -45,7 +45,7 @@ SMF_MANIFESTS_IN = smf/manifests/$(NAME).xml.in smf/manifests/haproxy.xml.in
 # Variables
 #
 
-eHELL=bash
+SHELL=bash
 
 NODE_PREBUILT_VERSION=v6.17.0
 NODE_PREBUILT_TAG=zone64
