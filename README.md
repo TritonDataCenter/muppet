@@ -6,28 +6,29 @@
 
 <!--
     Copyright 2019 Joyent, Inc.
+    Copyright 2024 MNX Cloud, Inc.
 -->
 
 # muppet
 
-This repository is part of the Joyent Triton and Manta projects.
+This repository is part of the Triton and Manta projects.
 For contribution guidelines, issues, and general documentation, visit the main
-[Triton](http://github.com/joyent/triton) and
-[Manta](http://github.com/joyent/manta) project pages.
+[Triton](http://github.com/TritonDataCenter/triton) and
+[Manta](http://github.com/TritonDataCenter/manta) project pages.
 
 Muppet is an HTTP loadbalancer (haproxy) and small daemon that interacts with
-ZooKeeper via [registrar](https://github.com/joyent/registrar).  The muppet
-daemon will update the loadbalancer as backend servers come and go.
+ZooKeeper via [registrar](https://github.com/TritonDataCenter/registrar).  The
+muppet daemon will update the loadbalancer as backend servers come and go.
 
-See the [documentation](https://github.com/joyent/muppet/docs/index.md) for
-more details.
+See the [documentation](https://github.com/TritonDataCenter/muppet/docs/index.md)
+for more details.
 
 ## Active Branches
 
 There are currently two active branches of this repository, for the two
 active major versions of Manta. See the [mantav2 overview
-document](https://github.com/joyent/manta/blob/master/docs/mantav2.md) for
-details on major Manta versions.
+document](https://github.com/TritonDataCenter/manta/blob/master/docs/mantav2.md)
+for details on major Manta versions.
 
 - [`master`](../../tree/master/) - For development of mantav2, the latest
   version of Manta. This is the version used by Triton.
@@ -37,7 +38,7 @@ details on major Manta versions.
 # Development
 
 Run `make prepush` before commits; otherwise, follow the
-[Joyent Engineering Guidelines](https://github.com/joyent/eng).
+[Joyent Engineering Guidelines](https://github.com/TritonDataCenter/eng).
 
 # Testing
 

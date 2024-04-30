@@ -1,8 +1,8 @@
 {
   "name": "muppet",
-  "description": "Joyent's Load Balancer",
-  "version": "1.4.2",
-  "author": "Joyent (joyent.com)",
+  "description": "Manta's Load Balancer",
+  "version": "1.4.3",
+  "author": "MNX Cloud (mnx.io)",
   "private": true,
   "dependencies": {
     "assert-plus": "1.0.0",

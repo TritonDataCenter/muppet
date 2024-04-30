@@ -11,6 +11,7 @@ apisections:
 
 <!--
     Copyright 2019 Joyent, Inc.
+    Copyright 2024 MNX Cloud, Inc.
 -->
 
 # Overview
@@ -27,9 +28,9 @@ and `muppet`, which manages `haproxy` configuration.
 
 The loadbalancer used is [HAProxy](http://www.haproxy.org/).
 
-Requests are routed to either [webapi](https://github.com/joyent/manta-muskie/)
-or [buckets-api](https://github.com/joyent/manta-buckets-api) API server
-instances as needed.  All `http` requests not matching the route
+Requests are routed to either [webapi](https://github.com/TritonDataCenter/manta-muskie/)
+or [buckets-api](https://github.com/TritonDataCenter/manta-buckets-api) API
+server instances as needed.  All `http` requests not matching the route
 `/:login/buckets/` are considered to be directory-style requests.
 
 *Important:* `muppet` is in control of the actual live configuration, and any
@@ -39,7 +40,7 @@ will.
 
 `haproxy` is configured to handle SSL termination. The certificate used is
 managed by `config-agent`, and can be updated in the Manta deployment zone using
-[manta-replace-cert](https://github.com/joyent/sdc-manta/blob/master/cmd/manta-replace-cert.js).
+[manta-replace-cert](https://github.com/TritonDataCenter/sdc-manta/blob/master/cmd/manta-replace-cert.js).
 This updates the SAPI metadata key `SSL_CERTIFICATE`, and be used without
 interrupting loadbalancer service.
 
@@ -70,13 +71,13 @@ There is an `haproxy.cfg.in` template file; this is used by `muppet` to generate
 a new `haproxy.cfg` each time the topology of online API servers changes.
 
 The `muppet` daemon directly connects to the
-[registrar](https://github.com/joyent/registrar) Zookeeper set up looking for
-changes to nodes under the `manta` (for `webapi`) or `buckets-api` path.  As
-backend servers come and go, the `haproxy` backend server configuration is
-updated as needed. If possible, we dynamically disable/enable the servers by
-talking to the `haproxy` management interface; if not, then we refresh
-`haproxy`, which starts a new child process without interrupting existing
-connections.
+[registrar](https://github.com/TritonDataCenter/registrar) Zookeeper set up
+looking for changes to nodes under the `manta` (for `webapi`) or `buckets-api`
+path.  As backend servers come and go, the `haproxy` backend server
+configuration is updated as needed. If possible, we dynamically disable/enable
+the servers by talking to the `haproxy` management interface; if not, then we
+refresh `haproxy`, which starts a new child process without interrupting
+existing connections.
 
 Note that `haproxy` itself is configured to do basic health checks on the
 backend servers, and will retire use of any unhealthy servers.
