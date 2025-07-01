@@ -70,7 +70,7 @@ frontend https
         # AWS S3 API compatibility - route SigV4 requests to buckets_api
         acl acl_aws_sigv4 req.hdr(authorization) -m beg "AWS4-HMAC-SHA256"
         use_backend buckets_api if acl_aws_sigv4
-        
+
         # Existing Manta bucket routing (unchanged)
         acl acl_bucket path_reg ^/[^/]+/buckets
         use_backend buckets_api if acl_bucket
