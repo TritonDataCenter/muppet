@@ -68,6 +68,8 @@ frontend https
         http-response deny if { res.hdr_cnt(content-length) gt 1 }
 
         # AWS S3 API compatibility - route SigV4 requests to buckets_api
+        # If for some reason any other back end uses SigV4 in the future,
+        # we will have to revisit this section.
         acl acl_aws_sigv4 req.hdr(authorization) -m beg "AWS4-HMAC-SHA256"
         use_backend buckets_api if acl_aws_sigv4
 
