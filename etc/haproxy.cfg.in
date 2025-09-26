@@ -72,6 +72,25 @@ frontend https
         # we will have to revisit this section.
         acl acl_aws_sigv4 req.hdr(authorization) -m beg "AWS4-HMAC-SHA256"
         use_backend buckets_api if acl_aws_sigv4
+        
+        # AWS S3 presigned URLs - route to buckets_api based on query parameters
+        acl acl_s3_presigned urlp(X-Amz-Algorithm) -m found
+        acl acl_s3_presigned_alt urlp(X-Amz-Signature) -m found
+        acl acl_s3_credential urlp(X-Amz-Credential) -m found
+        
+        # S3-style bucket/object paths detection
+        acl acl_s3_path path_reg ^/[^/]+/[^/]
+        acl acl_not_manta_user path_reg -v ^/[^/]+/(jobs|stor|public|reports|uploads)/
+        
+        # Route S3 requests with explicit S3 authentication
+        use_backend buckets_api if acl_s3_presigned
+        use_backend buckets_api if acl_s3_presigned_alt  
+        use_backend buckets_api if acl_s3_credential
+        
+        # Only route S3-style paths if they have S3 authentication
+        use_backend buckets_api if acl_s3_path acl_not_manta_user acl_aws_sigv4
+        use_backend buckets_api if acl_s3_path acl_not_manta_user acl_s3_presigned
+        use_backend buckets_api if acl_s3_path acl_not_manta_user acl_s3_credential
 
         # Existing Manta bucket routing (unchanged)
         acl acl_bucket path_reg ^/[^/]+/buckets
