@@ -72,6 +72,14 @@ frontend https
         # we will have to revisit this section.
         acl acl_aws_sigv4 req.hdr(authorization) -m beg "AWS4-HMAC-SHA256"
         use_backend buckets_api if acl_aws_sigv4
+        # AWS S3 SigV4 presigned URLs - route to buckets_api
+        acl acl_s3_presigned_v4 query -m reg ".*X-Amz-Algorithm.*"
+        use_backend buckets_api if acl_s3_presigned_v4
+        # AWS S3 CORS preflight requests - route OPTIONS to buckets_api for S3 paths
+        acl acl_s3_cors_preflight method OPTIONS
+        acl acl_s3_cors_preflight req.hdr(access-control-request-method) -m found
+        acl acl_s3_path path_reg ^/[^/]+(/.*)?(\?.*)?$
+        use_backend buckets_api if acl_s3_cors_preflight acl_s3_path
 
         # Existing Manta bucket routing (unchanged)
         acl acl_bucket path_reg ^/[^/]+/buckets
